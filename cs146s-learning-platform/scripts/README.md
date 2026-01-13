@@ -1,210 +1,94 @@
-# 数据库初始化脚本
+# 数据库初始化脚本使用指南
 
-## 概述
+本目录包含用于初始化和管理CS146S在线学习平台数据库的脚本。
 
-本目录包含数据库初始化脚本，用于创建课程和练习数据。
+## 📚 课程内容
 
-## 脚本说明
+本平台基于**斯坦福大学CS146S：现代软件开发者课程**（中文本地化版本v2）。
+
+课程源码位置: `/modern-software-dev-assignments-chinese-v2/`
+
+### 课程结构
+
+| 周次 | 标题 | 内容 | 练习数 |
+|------|------|------|--------|
+| Week 1 | 提示工程技术 | K-shot、思维链、工具调用、自一致性、RAG、反思 | 6个 |
+| Week 2 | 行动项提取器 | FastAPI + SQLite应用开发 | 1个项目 |
+| Week 3 | 自定义MCP服务器 | 模型上下文协议服务器开发 | 1个项目 |
+| Week 4 | 自主编码代理 | Claude Code自动化工作流 | 1个项目 |
+| Week 5 | 多代理工作流 | 本地终端环境多任务协作 | 1个项目 |
+| Week 6 | 安全扫描与修复 | Semgrep静态代码分析 | 1个项目 |
+| Week 7 | AI代码审查 | Gitee + AI脚本代码审查 | 1个项目 |
+| Week 8 | 多栈应用构建 | 3种技术栈Web应用开发 | 1个项目 |
+
+**总计**: 8周课程，13个练习/项目
+
+## 🚀 快速开始
+
+### 1. 初始化数据库
+
+首次使用或需要重置数据库时：
+
+```bash
+cd cs146s-learning-platform
+python3.11 scripts/init_database.py --reset
+```
+
+### 2. 配置千问API
+
+在项目根目录创建 `.env` 文件：
+
+```bash
+# 千问API配置
+QWEN_API_KEY=你的千问API密钥
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/api/v1
+QWEN_MODEL=qwen-turbo
+```
+
+获取API密钥: https://dashscope.aliyuncs.com/
+
+### 3. 测试配置
+
+```bash
+python3.11 scripts/test_qwen_config.py
+```
+
+### 4. 启动系统
+
+```bash
+python3.11 run.py
+```
+
+访问: http://localhost:5000
+
+## 🔧 脚本说明
 
 ### init_database.py
 
-数据库初始化脚本，用于创建Week 1-8的课程数据和练习题目。
+初始化数据库，创建所有课程周和练习数据。
+
+**参数**:
+- `--reset`: 重置数据库（删除所有数据）
+
+**使用场景**:
+- 首次部署系统
+- 数据库损坏需要重建
+- 开发环境重置
+
+### test_qwen_config.py
+
+测试千问模型配置和连接。
 
 **功能**:
-- 创建课程周数据
-- 创建练习题目
-- 支持数据库重置
+- 验证API密钥
+- 测试模型连接
+- 检查配置
 
-**使用方法**:
+## 📖 详细文档
 
-```bash
-# 初始化数据（保留现有数据）
-python3.11 scripts/init_database.py
+完整的使用指南和故障排除，请参考项目文档。
 
-# 重置数据库并初始化（删除所有现有数据）
-python3.11 scripts/init_database.py --reset
-```
+---
 
-## Week 1 课程内容
-
-### 课程信息
-- **标题**: Python基础与Qwen API入门
-- **描述**: 学习Python基础语法，了解AI大模型概念，掌握Qwen API的基本使用方法
-- **练习数量**: 8个
-
-### 练习列表
-
-#### 练习1: Hello World
-- **难度**: 初级 (beginner)
-- **分数**: 10分
-- **时间限制**: 5分钟
-- **描述**: 编写你的第一个Python程序，输出'Hello, World!'
-
-#### 练习2: 变量和数据类型
-- **难度**: 初级 (beginner)
-- **分数**: 15分
-- **时间限制**: 10分钟
-- **描述**: 创建不同类型的变量并输出它们的值和类型
-
-#### 练习3: 获取用户输入
-- **难度**: 初级 (beginner)
-- **分数**: 15分
-- **时间限制**: 10分钟
-- **描述**: 使用input()函数获取用户输入，并进行简单的处理
-
-#### 练习4: 条件判断
-- **难度**: 初级 (beginner)
-- **分数**: 20分
-- **时间限制**: 15分钟
-- **描述**: 使用if-elif-else语句根据分数判断等级
-
-#### 练习5: for循环
-- **难度**: 初级 (beginner)
-- **分数**: 20分
-- **时间限制**: 15分钟
-- **描述**: 使用for循环计算1到100的和
-
-#### 练习6: 列表基础
-- **难度**: 中级 (intermediate)
-- **分数**: 25分
-- **时间限制**: 20分钟
-- **描述**: 创建列表并进行基本操作
-
-#### 练习7: 定义函数
-- **难度**: 中级 (intermediate)
-- **分数**: 25分
-- **时间限制**: 20分钟
-- **描述**: 定义一个计算圆面积的函数
-
-#### 练习8: 理解Qwen API
-- **难度**: 中级 (intermediate)
-- **分数**: 30分
-- **时间限制**: 25分钟
-- **描述**: 编写代码展示对Qwen API基本概念的理解
-
-## 数据库结构
-
-### Week表
-- `id`: 主键
-- `week_number`: 周数 (1-8)
-- `title`: 标题
-- `description`: 描述
-- `content_path`: 内容路径
-- `is_active`: 是否激活
-- `created_at`: 创建时间
-- `updated_at`: 更新时间
-
-### Exercise表
-- `id`: 主键
-- `week_id`: 所属周ID（外键）
-- `title`: 标题
-- `description`: 描述
-- `exercise_type`: 练习类型 (code, prompt, project)
-- `difficulty`: 难度 (beginner, intermediate, advanced)
-- `initial_code`: 初始代码模板
-- `test_code`: 测试代码
-- `solution_code`: 参考答案
-- `hints`: 提示信息 (JSON)
-- `points`: 分数
-- `time_limit`: 时间限制（分钟）
-- `order_index`: 排序索引
-- `is_active`: 是否激活
-- `created_at`: 创建时间
-- `updated_at`: 更新时间
-
-## 注意事项
-
-1. **数据库重置**: 使用 `--reset` 参数会删除所有现有数据，请谨慎使用
-2. **数据完整性**: 脚本会检查数据是否已存在，避免重复创建
-3. **JSON格式**: hints字段使用JSON格式存储，确保使用`ensure_ascii=False`保持中文
-4. **外键关系**: Exercise表通过week_id关联到Week表
-
-## 扩展
-
-要添加更多周的数据，可以参考`init_week1()`函数的实现，创建类似的函数：
-
-```python
-def init_week2(app):
-    """初始化Week 2: 高级Python特性"""
-    with app.app_context():
-        # 检查Week 2是否已存在
-        week2 = Week.query.filter_by(week_number=2).first()
-        if week2:
-            print("⚠️  Week 2 已存在，跳过创建")
-            return week2
-        
-        # 创建Week 2
-        week2 = Week(
-            week_number=2,
-            title="高级Python特性",
-            description="学习Python高级特性...",
-            is_active=True
-        )
-        db.session.add(week2)
-        db.session.flush()
-        
-        # 添加练习...
-        
-        db.session.commit()
-        return week2
-```
-
-然后在`init_all_weeks()`函数中调用：
-
-```python
-def init_all_weeks(app):
-    with app.app_context():
-        week1 = init_week1(app)
-        week2 = init_week2(app)  # 添加这一行
-        # ...
-```
-
-## 测试
-
-初始化完成后，可以通过以下方式测试：
-
-```bash
-# 测试获取课程周列表
-curl http://localhost:5000/api/v1/learning/weeks
-
-# 测试获取练习列表
-curl http://localhost:5000/api/v1/exercises?week_id=1
-
-# 测试获取特定练习
-curl http://localhost:5000/api/v1/exercises/1
-```
-
-## 故障排除
-
-### 问题1: 数据库模型不匹配
-**错误**: `no such column: exercises.xxx`
-
-**解决方案**:
-```bash
-# 重置数据库
-python3.11 scripts/init_database.py --reset
-```
-
-### 问题2: 数据已存在
-**现象**: 脚本提示"Week 1 已存在，跳过创建"
-
-**解决方案**:
-- 如果需要重新创建，使用 `--reset` 参数
-- 如果只需要添加新数据，修改脚本添加新的周
-
-### 问题3: JSON编码错误
-**错误**: 中文显示为Unicode编码
-
-**解决方案**: 确保使用 `json.dumps(..., ensure_ascii=False)`
-
-## 维护
-
-- **定期备份**: 在重置数据库前备份重要数据
-- **版本控制**: 使用Flask-Migrate管理数据库迁移
-- **数据验证**: 添加数据验证逻辑确保数据完整性
-
-## 相关文档
-
-- [Flask-SQLAlchemy文档](https://flask-sqlalchemy.palletsprojects.com/)
-- [Flask-Migrate文档](https://flask-migrate.readthedocs.io/)
-- [项目README](../README.md)
+**版本**: v2.0  
+**更新日期**: 2026-01-13
