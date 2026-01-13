@@ -70,33 +70,34 @@
                 </div>
             </div>
 
-            <!-- 项目文件 -->
+            <!            <!-- 项目文件 -->
             <div class="card mb-3">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-folder-open"></i> 项目文件</h5>
+                    <h5 class="mb-0"><i class="fas fa-folder"></i> 项目文件</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 
                         <strong>提示：</strong>这是一个项目作业，需要在本地开发环境中完成。
                     </div>
                     
                     <h6>初始代码</h6>
-                    <pre><code class="language-python">{{ exercise.initial_code }}</code></pre>
+                    <pre style="max-height: none; white-space: pre-wrap; word-wrap: break-word;"><code class="language-python">{{ exercise.initial_code }}</code></pre>
                     
                     {% if exercise.test_code %}
                     <h6 class="mt-3">测试代码</h6>
-                    <pre><code class="language-python">{{ exercise.test_code }}</code></pre>
+                    <pre style="max-height: none; white-space: pre-wrap; word-wrap: break-word;"><code class="language-python">{{ exercise.test_code }}</code></pre>
                     {% endif %}
                     
                     <div class="mt-3">
                         <button class="btn btn-primary" onclick="downloadProjectFiles()">
-                            <i class="fas fa-download"></i> 下载项目文件
+                            <i class="fas fa-download"></i> 下载项目文件（ZIP打包）
                         </button>
-                        <button class="btn btn-secondary" onclick="copyToClipboard()">
-                            <i class="fas fa-copy"></i> 复制代码
+                        <button class="btn btn-secondary" onclick="copyAllCode()">
+                            <i class="fas fa-copy"></i> 复制所有代码
                         </button>
                     </div>
+                </div>
+            </div>   </div>
                 </div>
             </div>
 
@@ -278,35 +279,71 @@
 }
 </style>
 
+<!-- JSZip 库用于ZIP打包 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
 <script>
-// 下载项目文件
-function downloadProjectFiles() {
+// 下载项目文件（ZIP打包）
+async function downloadProjectFiles() {
     const exerciseId = {{ exercise.id }};
     const title = "{{ exercise.title }}";
     
-    // 创建ZIP文件内容
+    // 获取代码内容
     const initialCode = `{{ exercise.initial_code | safe }}`;
     const testCode = `{{ exercise.test_code | safe }}`;
     
-    // 创建并下载文件
-    const blob = new Blob([initialCode], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = title.replace(/\s+/g, '_') + '.py';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    // 创建ZIP文件
+    const zip = new JSZip();
     
-    alert('项目文件已下载！');
+    // 添加README文件
+    const readme = `# {{ exercise.title }}\n\n## 项目描述\n\n{{ exercise.description | safe }}\n\n## 文件说明\n\n- main.py: 初始代码，包含项目的主要逻辑\n- test.py: 测试代码，用于验证你的实现\n- requirements.txt: 项目依赖\n\n## 开发指南\n\n1. 阅读项目描述和要求\n2. 完善 main.py 中的代码实现\n3. 运行 test.py 进行测试\n4. 确保所有测试通过\n5. 将代码提交到GitHub仓库\n\n## 提交方式\n\n在学习平台上提交你的GitHub仓库链接。\n`;
+    zip.file('README.md', readme);
+    
+    // 添加初始代码
+    if (initialCode && initialCode.trim()) {
+        zip.file('main.py', initialCode);
+    }
+    
+    // 添加测试代码
+    if (testCode && testCode.trim()) {
+        zip.file('test.py', testCode);
+    }
+    
+    // 添加requirements.txt
+    const requirements = `# Python依赖包\n# 请根据项目需要添加依赖\n\n# 示例:\n# requests==2.31.0\n# openai==1.0.0\n`;
+    zip.file('requirements.txt', requirements);
+    
+    // 生成ZIP文件并下载
+    try {
+        const content = await zip.generateAsync({type: 'blob'});
+        const filename = title.replace(/[\s:]/g, '_') + '_project.zip';
+        saveAs(content, filename);
+        alert('项目文件已打包下载！');
+    } catch (error) {
+        console.error('ZIP打包失败:', error);
+        alert('下载失败，请重试');
+    }
 }
 
-// 复制代码到剪贴板
-function copyToClipboard() {
-    const code = `{{ exercise.initial_code | safe }}`;
-    navigator.clipboard.writeText(code).then(() => {
-        alert('代码已复制到剪贴板！');
+// 复制所有代码到剪贴板
+function copyAllCode() {
+    const initialCode = `{{ exercise.initial_code | safe }}`;
+    const testCode = `{{ exercise.test_code | safe }}`;
+    
+    let allCode = '# ========== 初始代码 (main.py) ==========\n\n';
+    allCode += initialCode;
+    
+    if (testCode && testCode.trim()) {
+        allCode += '\n\n# ========== 测试代码 (test.py) ==========\n\n';
+        allCode += testCode;
+    }
+    
+    navigator.clipboard.writeText(allCode).then(() => {
+        alert('所有代码已复制到剪贴板！');
+    }).catch(err => {
+        console.error('复制失败:', err);
+        alert('复制失败，请重试');
     });
 }
 
