@@ -4,6 +4,7 @@ from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_session import Session
 import os
+import markdown as md
 
 from config import config
 
@@ -37,6 +38,14 @@ def create_app(config_name='development'):
 
     # 配置会话
     Session(app)
+
+    # 注册Jinja2过滤器
+    @app.template_filter('markdown')
+    def markdown_filter(text):
+        """Markdown过滤器"""
+        if not text:
+            return ''
+        return md.markdown(text, extensions=['fenced_code', 'codehilite', 'tables'])
 
     # 注册蓝图
     from app.routes.auth import auth_bp

@@ -51,6 +51,14 @@ def exercise_detail(exercise_id):
     if exercise.exercise_type == 'prompt':
         # 提示工程类型的练习，使用专门的沙箱界面
         return render_template('exercises/prompt_sandbox.html', exercise=exercise)
+    elif exercise.exercise_type == 'project':
+        # 项目类型的练习，使用项目工作区
+        from app.models import Submission
+        submission = Submission.query.filter_by(
+            user_id=current_user.id,
+            exercise_id=exercise_id
+        ).order_by(Submission.submitted_at.desc()).first()
+        return render_template('exercises/project_workspace.html', exercise=exercise, submission=submission)
     else:
         # 代码类型的练习，使用代码编辑器
         return render_template('exercises/exercise_detail.html', exercise=exercise)

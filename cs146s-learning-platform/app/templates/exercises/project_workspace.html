@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - 项目工作区{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- 面包屑导航 -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">学习仪表板</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.weeks') }}">学习周次</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('main.week_detail', week_number=exercise.week_id) }}">Week {{ exercise.week_id }}</a></li>
+            <li class="breadcrumb-item active">{{ exercise.title }}</li>
+        </ol>
+    </nav>
+
+    <!-- 项目标题 -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-project-diagram"></i> {{ exercise.title }}
+                <span class="badge badge-light ml-2">{{ exercise.difficulty }}</span>
+                <span class="badge badge-info ml-2">{{ exercise.points }}分</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5>项目描述</h5>
+                    <div class="project-description">
+                        {{ exercise.description | markdown | safe }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6><i class="fas fa-info-circle"></i> 项目信息</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>类型:</strong> 项目作业</li>
+                                <li><strong>难度:</strong> {{ exercise.difficulty }}</li>
+                                <li><strong>分数:</strong> {{ exercise.points }}分</li>
+                                <li><strong>状态:</strong> 
+                                    {% if submission %}
+                                        <span class="badge badge-success">已提交</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">未提交</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 项目工作区 -->
+    <div class="row">
+        <!-- 左侧：项目文件和说明 -->
+        <div class="col-md-6">
+            <!-- 项目要求 -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-tasks"></i> 项目要求</h5>
+                </div>
+                <div class="card-body">
+                    <div id="project-requirements">
+                        {{ exercise.description | markdown | safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 项目文件 -->
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-folder-open"></i> 项目文件</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>提示：</strong>这是一个项目作业，需要在本地开发环境中完成。
+                    </div>
+                    
+                    <h6>初始代码</h6>
+                    <pre><code class="language-python">{{ exercise.initial_code }}</code></pre>
+                    
+                    {% if exercise.test_code %}
+                    <h6 class="mt-3">测试代码</h6>
+                    <pre><code class="language-python">{{ exercise.test_code }}</code></pre>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="downloadProjectFiles()">
+                            <i class="fas fa-download"></i> 下载项目文件
+                        </button>
+                        <button class="btn btn-secondary" onclick="copyToClipboard()">
+                            <i class="fas fa-copy"></i> 复制代码
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 提交指南 -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-upload"></i> 提交指南</h5>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>在本地开发环境中完成项目</li>
+                        <li>确保所有测试通过</li>
+                        <li>将项目代码上传到GitHub仓库</li>
+                        <li>在下方提交GitHub仓库链接</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：提交和反馈 -->
+        <div class="col-md-6">
+            <!-- 提交区域 -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-paper-plane"></i> 提交项目</h5>
+                </div>
+                <div class="card-body">
+                    <form id="project-submission-form">
+                        <div class="form-group">
+                            <label for="github-url">GitHub仓库链接</label>
+                            <input type="url" class="form-control" id="github-url" 
+                                   placeholder="https://github.com/username/repository" 
+                                   required>
+                            <small class="form-text text-muted">
+                                请确保仓库是公开的，或者已添加教师为协作者
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="submission-notes">项目说明（可选）</label>
+                            <textarea class="form-control" id="submission-notes" rows="4" 
+                                      placeholder="描述你的实现方法、遇到的挑战、特殊功能等"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success btn-block">
+                            <i class="fas fa-check"></i> 提交项目
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 提交历史 -->
+            {% if submission %}
+            <div class="card mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> 提交历史</h5>
+                </div>
+                <div class="card-body">
+                    <div class="submission-item">
+                        <p><strong>提交时间:</strong> {{ submission.submitted_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        <p><strong>GitHub链接:</strong> <a href="{{ submission.code }}" target="_blank">{{ submission.code }}</a></p>
+                        <p><strong>状态:</strong> 
+                            {% if submission.score %}
+                                <span class="badge badge-success">已评分 ({{ submission.score }}分)</span>
+                            {% else %}
+                                <span class="badge badge-warning">待评分</span>
+                            {% endif %}
+                        </p>
+                        {% if submission.feedback %}
+                        <div class="alert alert-info mt-2">
+                            <strong>教师反馈:</strong><br>
+                            {{ submission.feedback }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- AI学习助手 -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-robot"></i> AI学习助手</h5>
+                </div>
+                <div class="card-body">
+                    <p>遇到困难？AI助手可以帮助你：</p>
+                    <ul>
+                        <li>理解项目需求</li>
+                        <li>解答技术问题</li>
+                        <li>提供实现建议</li>
+                        <li>调试代码错误</li>
+                    </ul>
+                    <button class="btn btn-info btn-block" onclick="openAIAssistant()">
+                        <i class="fas fa-comments"></i> 咨询AI助手
+                    </button>
+                </div>
+            </div>
+
+            <!-- 学习资源 -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-book"></i> 学习资源</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><a href="#" target="_blank"><i class="fas fa-link"></i> 官方文档</a></li>
+                        <li><a href="#" target="_blank"><i class="fas fa-video"></i> 视频教程</a></li>
+                        <li><a href="#" target="_blank"><i class="fas fa-code"></i> 示例代码</a></li>
+                        <li><a href="#" target="_blank"><i class="fas fa-question-circle"></i> 常见问题</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI助手对话框 -->
+<div class="modal fade" id="ai-assistant-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-robot"></i> AI学习助手</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="ai-chat-messages" style="height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-robot"></i> 你好！我是AI学习助手。有什么可以帮助你的吗？
+                    </div>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="ai-question" placeholder="输入你的问题...">
+                    <div class="input-group-append">
+                        <button class="btn btn-info" onclick="askAI()">
+                            <i class="fas fa-paper-plane"></i> 发送
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.project-description {
+    line-height: 1.8;
+}
+
+.project-description h1, .project-description h2, .project-description h3 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.project-description ul, .project-description ol {
+    margin-left: 20px;
+}
+
+.project-description code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+.project-description pre {
+    background-color: #f4f4f4;
+    padding: 15px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+.submission-item {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+</style>
+
+<script>
+// 下载项目文件
+function downloadProjectFiles() {
+    const exerciseId = {{ exercise.id }};
+    const title = "{{ exercise.title }}";
+    
+    // 创建ZIP文件内容
+    const initialCode = `{{ exercise.initial_code | safe }}`;
+    const testCode = `{{ exercise.test_code | safe }}`;
+    
+    // 创建并下载文件
+    const blob = new Blob([initialCode], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = title.replace(/\s+/g, '_') + '.py';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    
+    alert('项目文件已下载！');
+}
+
+// 复制代码到剪贴板
+function copyToClipboard() {
+    const code = `{{ exercise.initial_code | safe }}`;
+    navigator.clipboard.writeText(code).then(() => {
+        alert('代码已复制到剪贴板！');
+    });
+}
+
+// 提交项目
+document.getElementById('project-submission-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const githubUrl = document.getElementById('github-url').value;
+    const notes = document.getElementById('submission-notes').value;
+    
+    try {
+        const response = await fetch('/api/v1/exercises/{{ exercise.id }}/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                code: githubUrl,
+                notes: notes
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('项目提交成功！');
+            location.reload();
+        } else {
+            alert('提交失败: ' + result.message);
+        }
+    } catch (error) {
+        alert('提交失败: ' + error.message);
+    }
+});
+
+// 打开AI助手
+function openAIAssistant() {
+    $('#ai-assistant-modal').modal('show');
+}
+
+// 询问AI
+async function askAI() {
+    const question = document.getElementById('ai-question').value;
+    if (!question.trim()) return;
+    
+    const messagesDiv = document.getElementById('ai-chat-messages');
+    
+    // 添加用户问题
+    messagesDiv.innerHTML += `
+        <div class="alert alert-secondary">
+            <strong>你:</strong> ${question}
+        </div>
+    `;
+    
+    document.getElementById('ai-question').value = '';
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+    try {
+        const response = await fetch('/api/v1/ai/ask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question: question,
+                context: {
+                    exercise_id: {{ exercise.id }},
+                    exercise_title: "{{ exercise.title }}",
+                    exercise_type: "project"
+                }
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            messagesDiv.innerHTML += `
+                <div class="alert alert-info">
+                    <strong><i class="fas fa-robot"></i> AI助手:</strong><br>
+                    ${result.answer}
+                </div>
+            `;
+        } else {
+            messagesDiv.innerHTML += `
+                <div class="alert alert-danger">
+                    <strong>错误:</strong> ${result.message}
+                </div>
+            `;
+        }
+    } catch (error) {
+        messagesDiv.innerHTML += `
+            <div class="alert alert-danger">
+                <strong>错误:</strong> ${error.message}
+            </div>
+        `;
+    }
+    
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// 回车发送消息
+document.getElementById('ai-question').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        askAI();
+    }
+});
+</script>
+{% endblock %}
