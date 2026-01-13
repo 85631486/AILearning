@@ -712,32 +712,33 @@ def demonstrate_generation():
     for name, info in templates.items():
         print(f"  - {name}: {info['description']}")
 
-    print("
-🔧 生成示例应用..."    # 生成一个示例应用
+    print("\n🔧 生成示例应用...")
+    # 生成一个示例应用
     result = generate_app_from_prompt(
         "创建一个任务管理系统，具有任务的增删改查功能",
         "react-flask"
     )
 
     if result['success']:
-        print("✅ 应用生成成功!"        print(f"📁 生成位置: {result['app_path']}")
+        print("✅ 应用生成成功!")
+        print(f"📁 生成位置: {result['app_path']}")
         print(f"📄 生成文件数: {len(result['files_generated'])}")
 
-        print("
-📋 生成的文件:"        for file in result['files_generated'][:10]:  # 只显示前10个
+        print("\n📋 生成的文件:")
+        for file in result['files_generated'][:10]:  # 只显示前10个
             print(f"  - {file}")
 
         if len(result['files_generated']) > 10:
             print(f"  ... 还有 {len(result['files_generated']) - 10} 个文件")
 
-        print("
-🚀 后续步骤:"        for step in result['next_steps']:
+        print("\n🚀 后续步骤:")
+        for step in result['next_steps']:
             print(f"  • {step}")
     else:
         print(f"❌ 生成失败: {result.get('error', '未知错误')}")
 
-    print("
-💡 提示:"    print("  • 每个技术栈都会生成完整的项目结构")
+    print("\n💡 提示:")
+    print("  • 每个技术栈都会生成完整的项目结构")
     print("  • 包含前后端代码、配置和文档")
     print("  • 可以直接运行和部署")
     print("  • 支持多种现代Web开发技术栈")

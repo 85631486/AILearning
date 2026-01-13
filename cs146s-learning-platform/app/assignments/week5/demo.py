@@ -95,7 +95,7 @@ def demo_parallel_workflows():
     print(f"总脚本数: {result['total_scripts']}")
     print(f"完成脚本: {result['completed_scripts']}")
     print(f"失败脚本: {result['failed_scripts']}")
-    print(".2f"
+    print(f"总耗时: {result.get('total_time', 0):.2f}秒")
     print("脚本结果:")
     for script_result in result['script_results']:
         print(f"  {script_result['script_name']}: {script_result['status']}")
@@ -113,7 +113,7 @@ def demo_parallel_workflows():
     print(f"总脚本数: {result['total_scripts']}")
     print(f"完成脚本: {result['completed_scripts']}")
     print(f"失败脚本: {result['failed_scripts']}")
-    print(".2f"
+    print(f"总耗时: {result.get('total_time', 0):.2f}秒")
     print("脚本结果:")
     for script_result in result['script_results']:
         print(f"  {script_result['script_name']}: {script_result['status']}")

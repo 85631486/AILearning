@@ -20,8 +20,8 @@ def demo_app_generation() -> None:
     for name, info in templates.items():
         print(f"  - {name}: {info['description']}")
 
-    print("
-🔧 生成示例应用..."    # 生成一个React + Flask应用
+    print("\n🔧 生成示例应用...")
+    # 生成一个React + Flask应用
     spec = {
         'name': 'TaskManager',
         'description': '任务管理系统',
@@ -40,17 +40,18 @@ def demo_app_generation() -> None:
         result = generator.generate_app(spec, "generated_taskmanager")
 
         if result['success']:
-            print("✅ 应用生成成功!"            print(f"📁 输出目录: {result['app_path']}")
+            print("✅ 应用生成成功!")
+            print(f"📁 输出目录: {result['app_path']}")
             print(f"📄 生成文件数: {len(result['files_generated'])}")
 
-            print("
-📋 生成的文件:"            for file_path in result['files_generated'][:10]:  # 只显示前10个
+            print("\n📋 生成的文件:")
+            for file_path in result['files_generated'][:10]:  # 只显示前10个
                 print(f"  - {file_path}")
             if len(result['files_generated']) > 10:
                 print(f"  ... 还有 {len(result['files_generated']) - 10} 个文件")
 
-            print("
-🚀 后续设置步骤:"            for step in result['next_steps']:
+            print("\n🚀 后续设置步骤:")
+            for step in result['next_steps']:
                 print(f"  • {step}")
         else:
             print(f"❌ 生成失败: {result.get('error', '未知错误')}")
@@ -141,8 +142,8 @@ def demo_app_structure_analysis() -> None:
             ext = os.path.splitext(file)[1].lower()
             file_types[ext] = file_types.get(ext, 0) + 1
 
-    print("
-📈 文件统计:"    print(f"  总文件数: {total_files}")
+    print("\n📈 文件统计:")
+    print(f"  总文件数: {total_files}")
     print("  文件类型分布:")
     for ext, count in sorted(file_types.items()):
         print(f"    {ext or '无扩展名'}: {count} 个文件")
@@ -316,21 +317,21 @@ def main() -> None:
         demo_deployment_options()
         demo_ai_acceleration_benefits()
 
-        print("
-🎉 多技术栈应用构建演示完成！"        print("\n📁 生成的文件和目录:")
+        print("\n🎉 多技术栈应用构建演示完成！")
+        print("\n📁 生成的文件和目录:")
         print("  - generated_taskmanager/ (完整应用)")
         print("  - generated_apps/ (多技术栈应用)")
         print("  - app/assignments/week8/apps/taskmanager_react_flask/ (示例完整应用)")
 
-        print("
-💡 学习要点:"        print("  • AI可以显著加速Web应用开发过程")
+        print("\n💡 学习要点:")
+        print("  • AI可以显著加速Web应用开发过程")
         print("  • 不同技术栈各有优势，选择要基于项目需求")
         print("  • 生成的应用包含完整的前后端和部署配置")
         print("  • AI生成的应用可以作为学习和快速原型的起点")
         print("  • 理解多技术栈可以帮助做出更好的架构决策")
 
-        print("
-🚀 实际应用建议:"        print("  • 从AI生成的基础应用开始，逐步添加业务逻辑")
+        print("\n🚀 实际应用建议:")
+        print("  • 从AI生成的基础应用开始，逐步添加业务逻辑")
         print("  • 对比不同技术栈的优缺点，选择最适合的方案")
         print("  • 使用生成的应用作为团队培训和学习材料")
         print("  • 在实际项目中结合手动优化和AI生成的代码")

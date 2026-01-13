@@ -571,20 +571,20 @@ def demonstrate_tasks():
             severity_count[comment['severity']] += 1
             print(f"  {comment['severity'].upper()}: {comment['message']}")
 
-        print("
-📊 审查摘要:"        print(f"  错误: {severity_count['error']}")
+        print("\n📊 审查摘要:")
+        print(f"  错误: {severity_count['error']}")
         print(f"  警告: {severity_count['warning']}")
         print(f"  信息: {severity_count['info']}")
 
         # 生成PR描述
         pr_desc = task.generate_pr_description()
-        print("
-📝 PR描述已生成"        # 保存PR描述
+        print("\n📝 PR描述已生成")
+        # 保存PR描述
         with open(f"pr_{task.task_id}.md", 'w', encoding='utf-8') as f:
             f.write(pr_desc)
 
-    print("
-🎯 任务演示完成"    print("生成的文件:")
+    print("\n🎯 任务演示完成")
+    print("生成的文件:")
     for task in tasks:
         print(f"  - pr_{task.task_id}.md")
 

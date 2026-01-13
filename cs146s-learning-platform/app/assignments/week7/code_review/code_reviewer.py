@@ -553,8 +553,8 @@ def process_user_data(user_input):
             print(f"   建议: {comment.suggestion}")
 
     # 手动审查指导
-    print("
-👥 手动审查清单:"    checklist = manual_reviewer.get_checklist()
+    print("\n👥 手动审查清单:")
+    checklist = manual_reviewer.get_checklist()
     for category, questions in checklist.items():
         print(f"\n{category.upper()}:")
         for question in questions:
@@ -563,8 +563,8 @@ def process_user_data(user_input):
     # 清理临时文件
     os.remove(temp_file)
 
-    print("
-📊 对比分析:"    print("🤖 AI审查优点:")
+    print("\n📊 对比分析:")
+    print("🤖 AI审查优点:")
     print("  - 快速自动化检查")
     print("  - 覆盖常见模式和最佳实践")
     print("  - 一致的审查标准")

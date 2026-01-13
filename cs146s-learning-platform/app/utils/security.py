@@ -15,7 +15,7 @@ class CodeSecurityChecker:
         r'exec\s*\(',
         r'open\s*\(',
         r'file\s*\(',
-        r'input\s*\(',  # 防止无限等待
+        # input() 允许使用，通过stdin重定向处理
         # 文件系统操作
         r'\.remove\s*\(',
         r'\.unlink\s*\(',

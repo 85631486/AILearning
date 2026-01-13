@@ -76,13 +76,13 @@ def demo_agent_collaboration():
 
     # 显示系统状态
     status = orchestrator.get_system_status()
-    print("
-📊 系统状态:"    print(f"  代理数量: {len(status['agents'])}")
+    print("\n📊 系统状态:")
+    print(f"  代理数量: {len(status['agents'])}")
     print(f"  任务数量: {status['total_tasks']}")
     print(f"  已完成任务: {status['completed_tasks']}")
 
-    print("
-📝 任务详情:"    for task_id, task_info in status['tasks'].items():
+    print("\n📝 任务详情:")
+    for task_id, task_info in status['tasks'].items():
         print(f"  {task_id}: {task_info['status']} ({task_info['assigned_agent']})")
         if task_info['result']:
             print(f"    结果: {task_info['result']}")

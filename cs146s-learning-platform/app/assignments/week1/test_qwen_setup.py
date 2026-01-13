@@ -40,7 +40,8 @@ def test_qwen_connection():
             model = "qwen-turbo"  # fallback
 
         response = client.chat(model, messages, {"temperature": 0.3})
-        print("✅ API调用成功!"        print(f"🤖 模型回复: {response['content'][:100]}...")
+        print("✅ API调用成功!")
+        print(f"🤖 模型回复: {response['content'][:100]}...")
 
         return True
 

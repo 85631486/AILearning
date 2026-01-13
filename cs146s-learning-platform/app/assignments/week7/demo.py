@@ -109,7 +109,7 @@ class DataProcessor:
     print("\n📄 生成审查报告...")
     review_results = ai_reviewer.review_pull_request([sample_file])
     report = ai_reviewer.generate_review_report(review_results, "ai_review_report.md")
-    print("报告已保存到: ai_review_report.md"
+    print("报告已保存到: ai_review_report.md")
 
     # 清理示例文件
     os.remove(sample_file)
@@ -128,14 +128,14 @@ def demo_manual_review_guidance():
         for question in questions:
             print(f"  • {question}")
 
-    print("
-📝 PR模板示例:"    pr_template = manual_reviewer.generate_pr_template()
+    print("\n📝 PR模板示例:")
+    pr_template = manual_reviewer.generate_pr_template()
     print(pr_template)
 
     # 保存PR模板
     with open("pr_template.md", 'w', encoding='utf-8') as f:
         f.write(pr_template)
-    print("PR模板已保存到: pr_template.md"
+    print("PR模板已保存到: pr_template.md")
 
 
 def demo_review_comparison():
@@ -178,8 +178,8 @@ def demo_review_comparison():
         for item in items:
             print(f"  {item}")
 
-    print("
-📊 实际应用建议:"    print("小型PR (< 50行): AI审查 + 快速手动检查")
+    print("\n📊 实际应用建议:")
+    print("小型PR (< 50行): AI审查 + 快速手动检查")
     print("中型PR (50-200行): AI审查 + 详细手动审查")
     print("大型PR (> 200行): AI审查 + 多人审查 + 结对编程")
     print("复杂功能: AI审查 + 架构审查 + 用户验收测试")
@@ -262,12 +262,12 @@ def demo_full_workflow():
     for step_info in workflow_steps:
         print(f"\n{step_info['step']}. {step_info['title']}")
         print(f"   {step_info['description']}")
-        print("   执行操作:"
+        print("   执行操作:")
         for action in step_info['actions']:
             print(f"   • {action}")
 
-    print("
-🎯 工作流程关键点:"    print("  • 🔄 持续集成：自动化测试和构建")
+    print("\n🎯 工作流程关键点:")
+    print("  • 🔄 持续集成：自动化测试和构建")
     print("  • 👥 协作审查：多人参与提高质量")
     print("  • 📈 持续改进：从每次审查中学习")
     print("  • 🛡️ 质量保障：多层次的检查机制")
@@ -284,18 +284,18 @@ def main():
         demo_review_comparison()
         demo_full_workflow()
 
-        print("
-📚 运行任务演示..."        demonstrate_tasks()
+        print("\n📚 运行任务演示...")
+        demonstrate_tasks()
 
-        print("
-🎉 代码审查演示完成！"        print("\n📁 生成的文件:")
+        print("\n🎉 代码审查演示完成！")
+        print("\n📁 生成的文件:")
         print("  - ai_review_report.md (AI审查报告)")
         print("  - pr_template.md (PR模板)")
         print("  - pr_task_1_add_validation.md (任务1 PR)")
         print("  - pr_task_2_add_error_handling.md (任务2 PR)")
 
-        print("
-💡 学习要点:"        print("  • AI审查提供快速、一致的初步检查")
+        print("\n💡 学习要点:")
+        print("  • AI审查提供快速、一致的初步检查")
         print("  • 手动审查关注业务逻辑和设计质量")
         print("  • 结合两者可以获得最佳审查效果")
         print("  • 良好的审查流程是高质量代码的保障")

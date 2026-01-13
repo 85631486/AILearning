@@ -76,7 +76,7 @@ DB_PASSWORD = "admin123"
     # 生成报告
     print("\n📄 生成扫描报告...")
     report = scanner.generate_report(findings, "security_scan_report.md")
-    print("报告已保存到: security_scan_report.md"
+    print("报告已保存到: security_scan_report.md")
 
     # 清理示例文件
     os.remove(example_file)
@@ -240,7 +240,7 @@ const apiKey = "hardcoded_key_123";  // 硬编码密钥
     # 生成完整报告
     print("\n📄 生成完整项目报告...")
     report = scanner.generate_report(findings, "project_security_report.md")
-    print("项目安全报告已保存到: project_security_report.md"
+    print("项目安全报告已保存到: project_security_report.md")
 
     # 清理示例项目
     import shutil
