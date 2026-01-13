@@ -24,31 +24,21 @@
             </h3>
         </div>
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <h5>项目描述</h5>
-                    <div class="project-description">
-                        {{ exercise.description | markdown | safe }}
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-light">
-                        <div class="card-body">
-                            <h6><i class="fas fa-info-circle"></i> 项目信息</h6>
-                            <ul class="list-unstyled">
-                                <li><strong>类型:</strong> 项目作业</li>
-                                <li><strong>难度:</strong> {{ exercise.difficulty }}</li>
-                                <li><strong>分数:</strong> {{ exercise.points }}分</li>
-                                <li><strong>状态:</strong> 
-                                    {% if submission %}
-                                        <span class="badge badge-success">已提交</span>
-                                    {% else %}
-                                        <span class="badge badge-warning">未提交</span>
-                                    {% endif %}
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6><i class="fas fa-info-circle"></i> 项目信息</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>类型:</strong> 项目作业</li>
+                        <li><strong>难度:</strong> {{ exercise.difficulty }}</li>
+                        <li><strong>分数:</strong> {{ exercise.points }}分</li>
+                        <li><strong>状态:</strong> 
+                            {% if submission %}
+                                <span class="badge badge-success">已提交</span>
+                            {% else %}
+                                <span class="badge badge-warning">未提交</span>
+                            {% endif %}
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
