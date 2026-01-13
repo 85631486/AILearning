@@ -1,0 +1,16 @@
+# 千问模型配置示例
+# 复制此文件内容创建 .env 文件并填入你的实际API密钥
+
+# 千问API密钥 - 从 https://dashscope.aliyuncs.com/ 获取
+QWEN_API_KEY=your_qwen_api_key_here
+
+# 千问API端点（通常不需要修改）
+QWEN_BASE_URL=https://dashscope.aliyuncs.com/api/v1
+
+# 可选：指定使用的模型提供商
+# 如果设置了QWEN_API_KEY，默认使用qwen
+# 如果注释掉QWEN_API_KEY，则使用ollama
+LLM_PROVIDER=qwen
+
+# Ollama配置（当使用ollama时）
+# OLLAMA_HOST=http://localhost:11434

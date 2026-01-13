@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block title %}学习周次 - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">学习仪表板</a></li>
+                <li class="breadcrumb-item active">学习周次</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-calendar-week"></i> 学习周次</h2>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" onclick="setViewMode('grid')">
+                    <i class="fas fa-th"></i> 网格视图
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="setViewMode('list')">
+                    <i class="fas fa-list"></i> 列表视图
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 学习进度概览 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="progress-circle" data-progress="0" id="overallProgress">
+                            <div class="progress-text">
+                                <span class="progress-value">0%</span>
+                                <br>
+                                <small class="text-muted">总体进度</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-primary mb-1" id="completedWeeks">0</h4>
+                        <small class="text-muted">已完成周次</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success mb-1" id="totalScore">0</h4>
+                        <small class="text-muted">总得分</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-info mb-1" id="nextMilestone">Week 1</h4>
+                        <small class="text-muted">下一里程碑</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 周次列表 -->
+<div class="row" id="weeksContainer">
+    <!-- 周次卡片将在这里动态生成 -->
+</div>
+
+<!-- 学习建议 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lightbulb"></i> 学习建议</h5>
+            </div>
+            <div class="card-body" id="learningTips">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 加载学习建议中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.progress-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: conic-gradient(#007bff 0deg, #e9ecef 0deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    position: relative;
+}
+
+.progress-circle::before {
+    content: '';
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+}
+
+.progress-text {
+    position: relative;
+    z-index: 1;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.weeks-grid .week-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.weeks-grid .week-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.week-status-not-started {
+    border-left: 4px solid #6c757d;
+}
+
+.week-status-in-progress {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(135deg, rgba(255,193,7,0.1) 0%, rgba(255,193,7,0.05) 100%);
+}
+
+.week-status-completed {
+    border-left: 4px solid #28a745;
+    background: linear-gradient(135deg, rgba(40,167,69,0.1) 0%, rgba(40,167,69,0.05) 100%);
+}
+
+.week-progress {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.week-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    transition: width 0.3s ease;
+}
+
+.exercise-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.difficulty-beginner { color: #28a745; }
+.difficulty-intermediate { color: #ffc107; }
+.difficulty-advanced { color: #dc3545; }
+</style>
+
+<script>
+let currentViewMode = 'grid';
+let weeksData = [];
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadWeeksData();
+});
+
+// 加载周次数据
+function loadWeeksData() {
+    Promise.all([
+        fetch('/api/v1/learning/progress').then(r => r.json()),
+        fetch('/api/v1/learning/weeks').then(r => r.json()),
+        fetch('/api/v1/learning/stats').then(r => r.json())
+    ])
+    .then(([progressData, weeksData, statsData]) => {
+        if (progressData.success && weeksData.success && statsData.success) {
+            renderOverview(progressData.progress, statsData.stats);
+            renderWeeks(weeksData.weeks, progressData.progress);
+            renderLearningTips(progressData.progress, statsData.stats);
+        }
+    })
+    .catch(error => {
+        console.error('加载数据失败:', error);
+        document.getElementById('weeksContainer').innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 加载数据失败，请刷新页面重试
+                </div>
+            </div>
+        `;
+    });
+}
+
+// 渲染概览数据
+function renderOverview(progress, stats) {
+    // 更新总体进度
+    const overallProgress = progress.overall_progress;
+    document.getElementById('overallProgress').setAttribute('data-progress', overallProgress);
+    document.querySelector('#overallProgress .progress-value').textContent = Math.round(overallProgress) + '%';
+
+    // 更新CSS变量用于进度圆环
+    const progressCircle = document.getElementById('overallProgress');
+    progressCircle.style.background = `conic-gradient(#007bff ${overallProgress * 3.6}deg, #e9ecef 0deg)`;
+
+    // 更新其他统计
+    document.getElementById('completedWeeks').textContent = progress.completed_weeks;
+    document.getElementById('totalScore').textContent = Math.round(stats.total_score);
+
+    // 计算下一里程碑
+    const nextMilestone = progress.weeks.find(w => w.status !== 'completed');
+    document.getElementById('nextMilestone').textContent = nextMilestone ? `Week ${nextMilestone.week_number}` : '全部完成';
+}
+
+// 渲染周次列表
+function renderWeeks(weeks, progress) {
+    const container = document.getElementById('weeksContainer');
+
+    // 创建进度映射
+    const progressMap = {};
+    progress.weeks.forEach(p => {
+        progressMap[p.week_id] = p;
+    });
+
+    const weeksHtml = weeks.map(week => {
+        const weekProgress = progressMap[week.id] || {
+            status: 'not_started',
+            progress_percentage: 0,
+            completed_exercises: 0,
+            total_exercises: 0
+        };
+
+        return createWeekCard(week, weekProgress);
+    }).join('');
+
+    container.innerHTML = weeksHtml;
+    container.className = `row ${currentViewMode === 'grid' ? 'weeks-grid' : 'weeks-list'}`;
+}
+
+// 创建周次卡片
+function createWeekCard(week, progress) {
+    const statusClass = `week-status-${progress.status}`;
+    const statusText = getStatusText(progress.status);
+    const statusIcon = getStatusIcon(progress.status);
+
+    return `
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card week-card h-100 ${statusClass}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-week text-primary"></i>
+                        Week ${week.week_number}: ${week.title}
+                    </h5>
+                    <span class="badge ${getStatusBadgeClass(progress.status)}">
+                        ${statusIcon} ${statusText}
+                    </span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p class="card-text text-muted mb-3">${week.description || '开始您的编程学习之旅'}</p>
+
+                    <div class="week-progress">
+                        <div class="week-progress-bar" style="width: ${progress.progress_percentage}%"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-muted">
+                            进度: ${Math.round(progress.progress_percentage)}%
+                        </small>
+                        <small class="exercise-count">
+                            <i class="fas fa-code"></i>
+                            ${progress.completed_exercises}/${progress.total_exercises} 练习
+                        </small>
+                    </div>
+
+                    <div class="mt-auto">
+                        <a href="/weeks/${week.week_number}" class="btn btn-primary w-100">
+                            ${progress.status === 'not_started' ? '开始学习' : '继续学习'}
+                            <i class="fas fa-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 获取状态文本
+function getStatusText(status) {
+    switch (status) {
+        case 'not_started': return '未开始';
+        case 'in_progress': return '进行中';
+        case 'completed': return '已完成';
+        default: return '未知';
+    }
+}
+
+// 获取状态图标
+function getStatusIcon(status) {
+    switch (status) {
+        case 'not_started': return '⏳';
+        case 'in_progress': return '🔄';
+        case 'completed': return '✅';
+        default: return '❓';
+    }
+}
+
+// 获取状态徽章样式
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'not_started': return 'bg-secondary';
+        case 'in_progress': return 'bg-warning text-dark';
+        case 'completed': return 'bg-success';
+        default: return 'bg-secondary';
+    }
+}
+
+// 设置视图模式
+function setViewMode(mode) {
+    currentViewMode = mode;
+
+    // 更新按钮状态
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (mode === 'grid') {
+        document.querySelector('[onclick="setViewMode(\'grid\')"]').classList.add('active');
+    } else {
+        document.querySelector('[onclick="setViewMode(\'list\')"]').classList.add('active');
+    }
+
+    // 重新渲染周次列表
+    if (weeksData.length > 0) {
+        renderWeeks(weeksData, window.currentProgress);
+    }
+}
+
+// 渲染学习建议
+function renderLearningTips(progress, stats) {
+    const tipsContainer = document.getElementById('learningTips');
+
+    let tips = [];
+
+    // 基于进度生成建议
+    if (progress.overall_progress === 0) {
+        tips.push({
+            icon: '🚀',
+            title: '开始学习之旅',
+            message: '从第一周开始，逐步掌握Python编程基础。',
+            action: { text: '开始Week 1', url: '/weeks/1' }
+        });
+    }
+
+    if (stats.streak_days === 0 && progress.completed_weeks > 0) {
+        tips.push({
+            icon: '🔥',
+            title: '保持学习连续性',
+            message: '连续学习可以帮助您更好地掌握知识，形成良好的学习习惯。',
+            action: { text: '继续学习', url: '/weeks' }
+        });
+    }
+
+    if (stats.accuracy_rate < 70 && stats.total_submissions > 5) {
+        tips.push({
+            icon: '🎯',
+            title: '提高准确率',
+            message: '尝试仔细阅读题目要求，使用AI助手获取提示。',
+            action: { text: '寻求帮助', url: '/ai-assistant' }
+        });
+    }
+
+    if (stats.completed_exercises > 10 && stats.average_score > 80) {
+        tips.push({
+            icon: '⭐',
+            title: '优秀表现',
+            message: '您的学习进度非常出色！继续保持。',
+            type: 'positive'
+        });
+    }
+
+    if (tips.length === 0) {
+        tips.push({
+            icon: '📚',
+            title: '持续学习',
+            message: '保持规律的学习节奏，逐步提升编程技能。',
+            type: 'neutral'
+        });
+    }
+
+    const tipsHtml = tips.map(tip => `
+        <div class="alert ${tip.type === 'positive' ? 'alert-success' : tip.type === 'warning' ? 'alert-warning' : 'alert-info'} d-flex align-items-start">
+            <div class="me-3 fs-4">${tip.icon}</div>
+            <div class="flex-grow-1">
+                <h6 class="alert-heading mb-1">${tip.title}</h6>
+                <p class="mb-2">${tip.message}</p>
+                ${tip.action ? `<a href="${tip.action.url}" class="btn btn-sm btn-outline-primary">${tip.action.text}</a>` : ''}
+            </div>
+        </div>
+    `).join('');
+
+    tipsContainer.innerHTML = tipsHtml;
+}
+</script>
+{% endblock %}

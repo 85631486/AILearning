@@ -1,0 +1,466 @@
+{% extends "base.html" %}
+
+{% block title %}学习仪表板 - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-tachometer-alt"></i> 学习仪表板</h2>
+            <span class="badge bg-primary fs-6">欢迎回来，{{ current_user.username }}！</span>
+        </div>
+    </div>
+</div>
+
+<!-- 学习概览卡片 -->
+<div class="row mb-4" id="overviewCards">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-code fa-2x mb-2"></i>
+                <h5>练习完成</h5>
+                <h3 id="completedExercises">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-trophy fa-2x mb-2"></i>
+                <h5>总分数</h5>
+                <h3 id="totalScore">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h5>学习时长</h5>
+                <h3 id="studyTime">0h</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-fire fa-2x mb-2"></i>
+                <h5>连续学习</h5>
+                <h3 id="streakDays">0</h3>
+                <small>天</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 学习进度 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> 学习进度</h5>
+            </div>
+            <div class="card-body">
+                <div id="progressChartContainer">
+                    <canvas id="progressChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> 快速开始</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('main.weeks') }}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="fas fa-book fa-2x d-block mb-2"></i>
+                            继续学习
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('main.ai_assistant') }}" class="btn btn-outline-success btn-lg w-100">
+                            <i class="fas fa-robot fa-2x d-block mb-2"></i>
+                            AI助手
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('main.progress') }}" class="btn btn-outline-info btn-lg w-100">
+                            <i class="fas fa-chart-bar fa-2x d-block mb-2"></i>
+                            查看进度
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="#" class="btn btn-outline-warning btn-lg w-100" onclick="openRandomExercise()">
+                            <i class="fas fa-random fa-2x d-block mb-2"></i>
+                            随机练习
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 成就与学习计划 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> 最新成就</h5>
+            </div>
+            <div class="card-body" id="recentAchievements">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 加载成就中...
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-check"></i> 今日计划</h5>
+            </div>
+            <div class="card-body" id="dailyPlan">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 生成学习计划中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 学习提醒 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-bell"></i> 学习提醒</h5>
+            </div>
+            <div class="card-body" id="learningReminders">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 检查提醒中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 最近活动 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> 最近活动</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity" class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 加载中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+.stats-card {
+    transition: transform 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+
+<script>
+let progressChart = null;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+
+// 加载仪表板数据
+function loadDashboardData() {
+    // 加载统计数据
+    loadStats();
+
+    // 加载进度数据
+    loadProgress();
+
+    // 加载成就数据
+    loadAchievements();
+
+    // 加载学习计划
+    loadStudyPlan();
+
+    // 加载学习提醒
+    loadLearningReminders();
+
+    // 加载最近活动
+    loadRecentActivity();
+}
+
+// 加载统计数据
+function loadStats() {
+    fetch('/api/v1/learning/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('completedExercises').textContent = data.stats.completed_exercises;
+                document.getElementById('totalScore').textContent = Math.round(data.stats.total_score);
+                document.getElementById('studyTime').textContent = Math.round(data.stats.total_time_spent / 3600) + 'h';
+                document.getElementById('streakDays').textContent = data.stats.streak_days;
+            }
+        })
+        .catch(error => {
+            console.error('加载统计数据失败:', error);
+        });
+}
+
+// 加载进度数据
+function loadProgress() {
+    fetch('/api/v1/learning/progress')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderProgressChart(data.progress);
+            }
+        })
+        .catch(error => {
+            console.error('加载进度数据失败:', error);
+        });
+}
+
+// 渲染进度图表
+function renderProgressChart(progressData) {
+    const ctx = document.getElementById('progressChart').getContext('2d');
+
+    const labels = progressData.weeks.map(week => `Week ${week.week_number}`);
+    const data = progressData.weeks.map(week => week.progress_percentage);
+
+    if (progressChart) {
+        progressChart.destroy();
+    }
+
+    progressChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '学习进度 (%)',
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// 加载最近活动
+function loadRecentActivity() {
+    fetch('/api/v1/exercises?page=1&per_page=5')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.exercises.length > 0) {
+                const activityHtml = data.exercises.map(exercise => `
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-code text-primary me-2"></i>
+                        <div>
+                            <strong>${exercise.title}</strong>
+                            <br>
+                            <small class="text-muted">${exercise.exercise_type} • ${exercise.difficulty}</small>
+                        </div>
+                        <a href="/exercises/${exercise.id}" class="btn btn-sm btn-outline-primary ms-auto">
+                            开始练习
+                        </a>
+                    </div>
+                `).join('');
+
+                document.getElementById('recentActivity').innerHTML = activityHtml;
+            } else {
+                document.getElementById('recentActivity').innerHTML = '<p class="text-muted">暂无练习数据</p>';
+            }
+        })
+        .catch(error => {
+            console.error('加载最近活动失败:', error);
+            document.getElementById('recentActivity').innerHTML = '<p class="text-danger">加载失败</p>';
+        });
+}
+
+// 加载成就数据
+function loadAchievements() {
+    fetch('/api/v1/learning/achievements')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderRecentAchievements(data.achievements);
+            }
+        })
+        .catch(error => {
+            console.error('加载成就失败:', error);
+            document.getElementById('recentAchievements').innerHTML = '<p class="text-danger">加载成就失败</p>';
+        });
+}
+
+// 渲染最新成就
+function renderRecentAchievements(achievements) {
+    const container = document.getElementById('recentAchievements');
+    const recentAchievements = achievements.filter(a => a.earned).slice(0, 6);
+
+    if (recentAchievements.length === 0) {
+        container.innerHTML = '<p class="text-muted">暂无成就，继续学习解锁更多成就！</p>';
+        return;
+    }
+
+    const achievementsHtml = recentAchievements.map(achievement => `
+        <div class="d-flex align-items-center mb-2">
+            <div class="achievement-icon me-3">${achievement.icon}</div>
+            <div>
+                <strong>${achievement.name}</strong>
+                <br>
+                <small class="text-muted">${achievement.description}</small>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = achievementsHtml;
+}
+
+// 加载学习计划
+function loadStudyPlan() {
+    fetch('/api/v1/learning/study-plan')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderDailyPlan(data.plan);
+            }
+        })
+        .catch(error => {
+            console.error('加载学习计划失败:', error);
+            document.getElementById('dailyPlan').innerHTML = '<p class="text-danger">加载计划失败</p>';
+        });
+}
+
+// 渲染每日计划
+function renderDailyPlan(plan) {
+    const container = document.getElementById('dailyPlan');
+
+    const planHtml = `
+        <div class="mb-3">
+            <strong>今日目标：</strong>
+            <span class="badge bg-primary">${plan.daily_goal.exercises} 道练习</span>
+            <span class="badge bg-info">${plan.daily_goal.time} 分钟</span>
+        </div>
+        ${plan.next_steps.length > 0 ? `
+            <div class="mb-3">
+                <strong>下一步：</strong>
+                <ul class="list-unstyled mb-0">
+                    ${plan.next_steps.slice(0, 2).map(step => `<li><i class="fas fa-check-circle text-success me-2"></i>${step}</li>`).join('')}
+                </ul>
+            </div>
+        ` : ''}
+        <a href="/weeks" class="btn btn-sm btn-outline-primary">查看详细计划</a>
+    `;
+
+    container.innerHTML = planHtml;
+}
+
+// 加载学习提醒
+function loadLearningReminders() {
+    fetch('/api/v1/learning/reminders')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderLearningReminders(data.reminders);
+            }
+        })
+        .catch(error => {
+            console.error('加载学习提醒失败:', error);
+            document.getElementById('learningReminders').innerHTML = '<p class="text-muted">暂无提醒</p>';
+        });
+}
+
+// 渲染学习提醒
+function renderLearningReminders(reminders) {
+    const container = document.getElementById('learningReminders');
+
+    if (reminders.length === 0) {
+        container.innerHTML = '<p class="text-muted">🎉 一切进展顺利，继续保持！</p>';
+        return;
+    }
+
+    const remindersHtml = reminders.slice(0, 3).map(reminder => `
+        <div class="alert alert-${reminder.priority === 'high' ? 'warning' : 'info'} mb-2">
+            <div class="d-flex align-items-center">
+                <span class="me-2">${reminder.icon}</span>
+                <div>
+                    <strong>${reminder.title}</strong>
+                    <br>
+                    <small>${reminder.message}</small>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = remindersHtml;
+}
+
+// 随机练习
+function openRandomExercise() {
+    fetch('/api/v1/exercises?page=1&per_page=100')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.exercises.length > 0) {
+                const randomExercise = data.exercises[Math.floor(Math.random() * data.exercises.length)];
+                window.location.href = `/exercises/${randomExercise.id}`;
+            } else {
+                alert('暂无可用的练习');
+            }
+        })
+        .catch(error => {
+            console.error('获取随机练习失败:', error);
+            alert('获取练习失败，请稍后重试');
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white text-center">
+                <h4><i class="fas fa-user-plus"></i> 用户注册</h4>
+            </div>
+            <div class="card-body">
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user"></i> 用户名
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               required minlength="3" maxlength="80">
+                        <div class="form-text">3-80个字符，只能包含字母、数字和下划线</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">
+                            <i class="fas fa-envelope"></i> 邮箱地址
+                        </label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                        <div class="form-text">用于登录和接收通知</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock"></i> 密码
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               required minlength="6">
+                        <div class="form-text">至少6位字符</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">
+                            <i class="fas fa-lock"></i> 确认密码
+                        </label>
+                        <input type="password" class="form-control" id="confirmPassword"
+                               name="confirmPassword" required>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success" id="registerBtn">
+                            <i class="fas fa-user-plus"></i> 注册
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center">
+                <p class="mb-0">已有账户？ <a href="{{ url_for('main.login') }}">立即登录</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    // 验证密码一致性
+    if (password !== confirmPassword) {
+        alert('两次输入的密码不一致');
+        return;
+    }
+
+    const registerBtn = document.getElementById('registerBtn');
+    const originalText = registerBtn.innerHTML;
+
+    // 显示加载状态
+    registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 注册中...';
+    registerBtn.disabled = true;
+
+    const formData = {
+        username: document.getElementById('username').value,
+        email: document.getElementById('email').value,
+        password: password
+    };
+
+    fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 注册成功，显示提示并跳转到登录页
+            alert('注册成功！请登录您的账户。');
+            window.location.href = '{{ url_for("main.login") }}';
+        } else {
+            // 注册失败，显示错误信息
+            alert(data.message || '注册失败，请重试');
+        }
+    })
+    .catch(error => {
+        console.error('Register error:', error);
+        alert('网络错误，请稍后重试');
+    })
+    .finally(() => {
+        // 恢复按钮状态
+        registerBtn.innerHTML = originalText;
+        registerBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

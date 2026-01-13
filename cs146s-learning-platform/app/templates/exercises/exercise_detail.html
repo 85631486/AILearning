@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row" data-exercise-id="{{ exercise.id }}">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.weeks') }}">课程学习</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.week_detail', week_number=exercise.week.week_number) }}">Week {{ exercise.week.week_number }}</a></li>
+                <li class="breadcrumb-item active">{{ exercise.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- 练习信息 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-code"></i> {{ exercise.title }}
+                    <span class="badge bg-{{ 'primary' if exercise.difficulty == 'beginner' else 'warning' if exercise.difficulty == 'intermediate' else 'danger' }} ms-2">
+                        {{ exercise.difficulty }}
+                    </span>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>类型：</strong>{{ exercise.exercise_type }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>分数：</strong>{{ exercise.points }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>时间限制：</strong>{{ exercise.time_limit }} 分钟
+                    </div>
+                    <div class="col-md-6">
+                        <strong>难度：</strong>{{ exercise.difficulty }}
+                    </div>
+                </div>
+                <hr>
+                <div class="exercise-description">
+                    <h5>练习描述</h5>
+                    <div class="content">
+                        {% if exercise.description %}
+                            {{ exercise.description | markdown }}
+                        {% else %}
+                            <p class="text-muted">暂无描述</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 代码编辑器 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit"></i> 代码编辑器
+                    </h5>
+                    <div id="autosave-indicator" class="autosave-indicator">
+                        <!-- Autosave status will be shown here -->
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Editor Toolbar -->
+                <div class="editor-toolbar mb-3">
+                    <div class="toolbar-group">
+                        <button id="runCodeBtn" class="toolbar-button success">
+                            <i class="fas fa-play"></i> 运行代码
+                        </button>
+                        <button id="formatCodeBtn" class="toolbar-button primary">
+                            <i class="fas fa-magic"></i> 格式化
+                        </button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button id="submitBtn" class="toolbar-button primary">
+                            <i class="fas fa-paper-plane"></i> 提交答案
+                        </button>
+                    </div>
+                    <div class="toolbar-group">
+                        <div class="editor-indicators">
+                            <span id="theme-indicator" class="editor-indicator" title="主题">☀️</span>
+                            <span id="line-numbers-indicator" class="editor-indicator" title="行号">🔢</span>
+                        </div>
+                        <div class="settings-dropdown">
+                            <button id="editorSettingsBtn" class="toolbar-button">
+                                <i class="fas fa-cog"></i> 设置
+                            </button>
+                            <div id="settings-menu" class="settings-menu">
+                                <div class="menu-header">编辑器设置</div>
+                                <button class="menu-item" onclick="exerciseEditor.toggleTheme()">
+                                    <i class="fas fa-moon"></i> <span id="theme-text">切换到深色主题</span>
+                                </button>
+                                <button class="menu-item" onclick="exerciseEditor.toggleLineNumbers()">
+                                    <i class="fas fa-list-ol"></i> <span id="line-numbers-text">隐藏行号</span>
+                                </button>
+                                <div class="menu-divider"></div>
+                                <div class="menu-header">制表符设置</div>
+                                <button class="menu-item" onclick="exerciseEditor.setTabSize(2)">
+                                    <i class="fas fa-indent"></i> 制表符: 2个空格
+                                </button>
+                                <button class="menu-item" onclick="exerciseEditor.setTabSize(4)">
+                                    <i class="fas fa-indent"></i> 制表符: 4个空格
+                                </button>
+                                <div class="menu-divider"></div>
+                                <div class="menu-header">键盘快捷键</div>
+                                <button class="menu-item" onclick="exerciseEditor.showKeyboardShortcuts()">
+                                    <i class="fas fa-keyboard"></i> 显示所有快捷键
+                                </button>
+                                <div class="menu-item" style="cursor: default; padding: 0.5rem 1rem;">
+                                    <small style="color: #6c757d;">
+                                        Ctrl+Enter: 运行代码<br>
+                                        Ctrl+S: 保存代码<br>
+                                        Ctrl+Shift+F: 格式化<br>
+                                        Ctrl+/: 注释切换<br>
+                                        Ctrl+Shift+T: 切换主题<br>
+                                        Ctrl+Shift+L: 切换行号
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monaco Editor Container -->
+                <div class="editor-container">
+                    <div id="editor-container" style="height: 400px;"></div>
+                </div>
+
+                <!-- Hidden initial code for editor -->
+                <script id="initial-code" type="text/plain">{{ exercise.initial_code | default('# 请在这里编写代码\nprint("Hello World!")') }}</script>
+            </div>
+        </div>
+
+        <!-- 执行结果 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="output-header">
+                    <div class="output-tabs">
+                        <button class="output-tab active" onclick="switchOutputTab('all')">
+                            <i class="fas fa-terminal"></i> 全部输出
+                        </button>
+                        <button class="output-tab" onclick="switchOutputTab('stdout')">
+                            <i class="fas fa-check-circle"></i> 标准输出
+                        </button>
+                        <button class="output-tab" onclick="switchOutputTab('stderr')">
+                            <i class="fas fa-exclamation-triangle"></i> 错误输出
+                        </button>
+                    </div>
+                    <div class="output-actions">
+                        <button class="toolbar-button" onclick="copyOutput()" title="复制输出">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="toolbar-button" onclick="clearOutput()" title="清除输出">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="output-panel" class="output-panel">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 请先运行代码查看结果
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 代码检查面板 -->
+        <div id="lint-panel" class="lint-panel">
+            <div id="lint-header" class="lint-header">
+                <div class="lint-toggle">
+                    <i class="fas fa-chevron-down"></i>
+                    <span>代码检查</span>
+                    <span id="lint-count" class="lint-count">0</span>
+                </div>
+                <div class="lint-actions">
+                    <button class="toolbar-button" onclick="exerciseEditor.lintManager.scheduleCheck()" title="重新检查">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="toolbar-button" onclick="clearLintIssues()" title="清除问题">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="lint-content" class="lint-content">
+                <div class="text-muted p-3">正在检查代码...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- 练习提示 -->
+        {% if exercise.hints %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb"></i> 提示
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="hints-content">
+                    {{ exercise.hints | markdown }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AI助手 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-robot"></i> AI助手
+                </h5>
+            </div>
+            <div class="card-body">
+                <button id="explainCodeBtn" class="btn btn-outline-info btn-sm mb-2 w-100">
+                    <i class="fas fa-question-circle"></i> 解释代码
+                </button>
+                <button id="debugCodeBtn" class="btn btn-outline-warning btn-sm mb-2 w-100">
+                    <i class="fas fa-bug"></i> 调试代码
+                </button>
+                <button id="getHintBtn" class="btn btn-outline-success btn-sm w-100">
+                    <i class="fas fa-lightbulb"></i> 获取提示
+                </button>
+            </div>
+        </div>
+
+        <!-- 学习进度 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i> 学习进度
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="progress-info">
+                    <p class="text-muted">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交历史 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> 提交历史
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="submission-history">
+                    <p class="text-muted">暂无提交记录</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI对话模态框 -->
+<div class="modal fade" id="aiModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="aiModalTitle">AI助手</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="ai-response" class="text-muted">
+                    正在思考中...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Editor Styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/editor.css') }}">
+
+<!-- Monaco Editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+
+<!-- Exercise Editor Script -->
+<script src="{{ url_for('static', filename='js/exercise-editor.js') }}"></script>
+
+<script>
+// 简单的辅助函数
+function switchOutputTab(tab) {
+    // 切换输出标签页的实现
+    const tabs = document.querySelectorAll('.output-tab');
+    const contents = document.querySelectorAll('.output-content');
+
+    tabs.forEach(t => t.classList.remove('active'));
+    contents.forEach(c => c.style.display = 'none');
+
+    document.querySelector(`[onclick="switchOutputTab('${tab}')"]`).classList.add('active');
+
+    if (tab === 'stdout') {
+        document.querySelector('.stdout').style.display = 'block';
+    } else if (tab === 'stderr') {
+        document.querySelector('.stderr').style.display = 'block';
+    } else {
+        contents.forEach(c => c.style.display = 'block');
+    }
+}
+
+function copyOutput() {
+    const output = document.querySelector('.output-content pre');
+    if (output) {
+        navigator.clipboard.writeText(output.textContent).then(() => {
+            // 可以添加一个临时的"已复制"提示
+            console.log('Output copied to clipboard');
+        });
+    }
+}
+
+function clearOutput() {
+    const outputPanel = document.getElementById('output-panel');
+    outputPanel.innerHTML = `
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 输出已清除，请重新运行代码
+        </div>
+    `;
+}
+
+function clearLintIssues() {
+    if (window.exerciseEditor && window.exerciseEditor.lintManager) {
+        window.exerciseEditor.lintManager.issues = [];
+        window.exerciseEditor.lintManager.updateDecorations();
+        window.exerciseEditor.lintManager.updatePanel();
+    }
+}
+
+function toggleTheme() {
+    const currentTheme = localStorage.getItem('editor-theme') || 'vs-light';
+    const newTheme = currentTheme === 'vs-light' ? 'vs-dark' : 'vs-light';
+    localStorage.setItem('editor-theme', newTheme);
+
+    if (window.exerciseEditor && window.exerciseEditor.editor) {
+        window.exerciseEditor.editor.updateOptions({ theme: newTheme });
+    }
+}
+
+function toggleLineNumbers() {
+    const current = localStorage.getItem('editor-line-numbers') !== 'false';
+    const newValue = !current;
+    localStorage.setItem('editor-line-numbers', newValue);
+
+    if (window.exerciseEditor && window.exerciseEditor.editor) {
+        window.exerciseEditor.editor.updateOptions({
+            lineNumbers: newValue ? 'on' : 'off'
+        });
+    }
+}
+
+// 确保exerciseEditor在全局作用域中可用
+window.exerciseEditor = null;
+
+// 页面加载完成后的初始化
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('练习详情页面已加载 - 增强版编辑器');
+
+    // 点击其他地方时关闭设置菜单
+    document.addEventListener('click', function(e) {
+        const settingsMenu = document.getElementById('settings-menu');
+        const settingsBtn = document.getElementById('editorSettingsBtn');
+
+        if (settingsMenu && settingsBtn &&
+            !settingsBtn.contains(e.target) &&
+            !settingsMenu.contains(e.target)) {
+            settingsMenu.classList.remove('show');
+        }
+    });
+});
+</script>
+{% endblock %}

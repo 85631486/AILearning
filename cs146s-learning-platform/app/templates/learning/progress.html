@@ -1,0 +1,786 @@
+{% extends "base.html" %}
+
+{% block title %}学习进度 - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">学习仪表板</a></li>
+                <li class="breadcrumb-item active">学习进度</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-chart-line"></i> 学习进度分析</h2>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary active" onclick="setTimeRange('week')">
+                    本周
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('month')">
+                    本月
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="setTimeRange('all')">
+                    全部
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 总体统计卡片 -->
+<div class="row mb-4" id="statsCards">
+    <!-- 统计卡片将在这里动态生成 -->
+</div>
+
+<!-- 进度图表 -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-area"></i> 学习进度趋势</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="progressTrendChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> 成就徽章</h5>
+            </div>
+            <div class="card-body" id="achievementsList">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 加载成就中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 详细分析 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-check"></i> 每周表现</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="weeklyPerformanceChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clock"></i> 学习时间分布</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="timeDistributionChart" width="400" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 练习分析 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-code"></i> 练习完成情况</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <canvas id="exerciseCompletionChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="col-md-4">
+                        <div id="exerciseStats">
+                            <!-- 练习统计将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 学习习惯分析 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-alt"></i> 学习日历</h5>
+            </div>
+            <div class="card-body">
+                <div id="learningCalendar" class="text-center">
+                    <div class="text-muted mb-3">
+                        <i class="fas fa-calendar fa-2x"></i>
+                    </div>
+                    <p>显示您最近30天的学习活动</p>
+                    <div id="calendarGrid" class="d-flex flex-wrap justify-content-center gap-1">
+                        <!-- 日历网格将在这里生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-lightbulb"></i> 学习洞察</h5>
+            </div>
+            <div class="card-body" id="learningInsights">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 分析学习数据中...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 排行榜 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-crown"></i> 排行榜</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>总积分排行</h6>
+                        <div id="leaderboardOverall" class="leaderboard-list">
+                            <!-- 排行榜将在这里生成 -->
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>本周排行</h6>
+                        <div id="leaderboardWeekly" class="leaderboard-list">
+                            <!-- 周排行榜将在这里生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+<style>
+.stats-card {
+    transition: transform 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+.achievement-badge {
+    display: inline-block;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem;
+    font-size: 1.5rem;
+    transition: transform 0.2s ease;
+}
+
+.achievement-badge:hover {
+    transform: scale(1.1);
+}
+
+.achievement-earned {
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #856404;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.achievement-locked {
+    background: #e9ecef;
+    color: #6c757d;
+    opacity: 0.6;
+}
+
+.calendar-day {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    margin: 1px;
+}
+
+.calendar-day.active {
+    background: #007bff;
+    color: white;
+}
+
+.calendar-day.inactive {
+    background: #e9ecef;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.leaderboard-item:hover {
+    background: #f8f9fa;
+}
+
+.leaderboard-item.current-user {
+    background: #e7f3ff;
+    border-left: 3px solid #007bff;
+}
+
+.rank-badge {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+
+.rank-1 { background: #ffd700; color: #856404; }
+.rank-2 { background: #c0c0c0; color: #495057; }
+.rank-3 { background: #cd7f32; color: white; }
+.rank-other { background: #6c757d; color: white; }
+
+.insight-card {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.1), rgba(0, 123, 255, 0.05));
+    border-left: 4px solid #007bff;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.375rem;
+}
+</style>
+
+<script>
+let currentTimeRange = 'week';
+let progressData = null;
+let statsData = null;
+
+// Chart instances
+let progressTrendChart = null;
+let weeklyPerformanceChart = null;
+let timeDistributionChart = null;
+let exerciseCompletionChart = null;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadProgressData();
+});
+
+// 设置时间范围
+function setTimeRange(range) {
+    currentTimeRange = range;
+
+    // 更新按钮状态
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    document.querySelector(`[onclick="setTimeRange('${range}')"]`).classList.add('active');
+
+    // 重新加载数据
+    loadProgressData();
+}
+
+// 加载进度数据
+function loadProgressData() {
+    Promise.all([
+        fetch('/api/v1/learning/progress').then(r => r.json()),
+        fetch('/api/v1/learning/stats').then(r => r.json()),
+        fetch('/api/v1/learning/leaderboard').then(r => r.json())
+    ])
+    .then(([progress, stats, leaderboard]) => {
+        if (progress.success && stats.success && leaderboard.success) {
+            progressData = progress.progress;
+            statsData = stats;
+
+            renderStatsCards(stats);
+            renderProgressCharts(progress.progress, stats);
+            renderAchievements(stats);
+            renderLearningCalendar(stats);
+            renderLearningInsights(progress.progress, stats);
+            renderLeaderboards(leaderboard.leaderboard);
+        }
+    })
+    .catch(error => {
+        console.error('加载进度数据失败:', error);
+        showError('加载数据失败，请刷新页面重试');
+    });
+}
+
+// 渲染统计卡片
+function renderStatsCards(stats) {
+    const container = document.getElementById('statsCards');
+
+    const cards = [
+        {
+            icon: 'fas fa-code',
+            title: '练习完成',
+            value: stats.completed_exercises,
+            subtitle: `共 ${stats.total_exercises} 题`,
+            color: 'primary',
+            progress: (stats.completed_exercises / stats.total_exercises * 100)
+        },
+        {
+            icon: 'fas fa-trophy',
+            title: '总积分',
+            value: Math.round(stats.total_score),
+            subtitle: `平均 ${Math.round(stats.average_score)} 分`,
+            color: 'success'
+        },
+        {
+            icon: 'fas fa-clock',
+            title: '学习时长',
+            value: Math.round(stats.total_time_spent / 3600) + 'h',
+            subtitle: `本周 ${Math.round(stats.weekly_submissions)} 次提交`,
+            color: 'info'
+        },
+        {
+            icon: 'fas fa-fire',
+            title: '连续学习',
+            value: stats.streak_days + ' 天',
+            subtitle: `正确率 ${Math.round(stats.accuracy_rate)}%`,
+            color: 'warning'
+        }
+    ];
+
+    const cardsHtml = cards.map(card => `
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card border-${card.color}">
+                <div class="card-body text-center">
+                    <i class="fas ${card.icon} fa-2x text-${card.color} mb-2"></i>
+                    <h5 class="text-${card.color}">${card.value}</h5>
+                    <p class="mb-1">${card.title}</p>
+                    <small class="text-muted">${card.subtitle}</small>
+                    ${card.progress !== undefined ? `
+                        <div class="progress mt-2" style="height: 4px;">
+                            <div class="progress-bar bg-${card.color}" style="width: ${card.progress}%"></div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = cardsHtml;
+}
+
+// 渲染进度图表
+function renderProgressCharts(progress, stats) {
+    renderProgressTrendChart(progress);
+    renderWeeklyPerformanceChart(progress);
+    renderTimeDistributionChart(stats);
+    renderExerciseCompletionChart(progress, stats);
+}
+
+// 渲染进度趋势图
+function renderProgressTrendChart(progress) {
+    const ctx = document.getElementById('progressTrendChart').getContext('2d');
+
+    const labels = progress.weeks.map(w => `Week ${w.week_number}`);
+    const data = progress.weeks.map(w => w.progress_percentage);
+
+    if (progressTrendChart) {
+        progressTrendChart.destroy();
+    }
+
+    progressTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '学习进度 (%)',
+                data: data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// 渲染每周表现图
+function renderWeeklyPerformanceChart(progress) {
+    const ctx = document.getElementById('weeklyPerformanceChart').getContext('2d');
+
+    const data = progress.weeks.map(w => ({
+        week: `Week ${w.week_number}`,
+        completed: w.completed_exercises,
+        total: w.total_exercises,
+        score: w.completed_exercises > 0 ? Math.round(
+            progress.weeks.find(p => p.week_id === w.week_id)?.time_spent || 0
+        ) : 0
+    }));
+
+    if (weeklyPerformanceChart) {
+        weeklyPerformanceChart.destroy();
+    }
+
+    weeklyPerformanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(d => d.week),
+            datasets: [{
+                label: '完成练习数',
+                data: data.map(d => d.completed),
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// 渲染时间分布图
+function renderTimeDistributionChart(stats) {
+    const ctx = document.getElementById('timeDistributionChart').getContext('2d');
+
+    // 模拟时间分布数据（实际应用中需要从后端获取）
+    const timeData = {
+        labels: ['早晨 (6-12)', '下午 (12-18)', '晚上 (18-24)', '深夜 (0-6)'],
+        data: [25, 35, 30, 10] // 百分比
+    };
+
+    if (timeDistributionChart) {
+        timeDistributionChart.destroy();
+    }
+
+    timeDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: timeData.labels,
+            datasets: [{
+                data: timeData.data,
+                backgroundColor: [
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                    'rgba(255, 99, 132, 0.6)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+// 渲染练习完成图
+function renderExerciseCompletionChart(progress, stats) {
+    const ctx = document.getElementById('exerciseCompletionChart').getContext('2d');
+
+    const completed = stats.completed_exercises;
+    const total = stats.total_exercises;
+    const remaining = total - completed;
+
+    if (exerciseCompletionChart) {
+        exerciseCompletionChart.destroy();
+    }
+
+    exerciseCompletionChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['已完成', '待完成'],
+            datasets: [{
+                data: [completed, remaining],
+                backgroundColor: [
+                    'rgba(40, 167, 69, 0.6)',
+                    'rgba(108, 117, 125, 0.6)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // 更新练习统计
+    const statsHtml = `
+        <h6>练习统计</h6>
+        <div class="mb-2">
+            <strong>已完成:</strong> ${completed} / ${total}
+        </div>
+        <div class="mb-2">
+            <strong>正确率:</strong> ${Math.round(stats.accuracy_rate)}%
+        </div>
+        <div class="mb-2">
+            <strong>平均得分:</strong> ${Math.round(stats.average_score)}
+        </div>
+        <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-success" style="width: ${(completed/total*100)}%"></div>
+        </div>
+    `;
+
+    document.getElementById('exerciseStats').innerHTML = statsHtml;
+}
+
+// 渲染成就徽章
+function renderAchievements(stats) {
+    const container = document.getElementById('achievementsList');
+
+    const achievements = [
+        {
+            id: 'first_exercise',
+            icon: '🏆',
+            title: '初学者',
+            description: '完成第一个练习',
+            earned: stats.total_submissions > 0
+        },
+        {
+            id: 'ten_exercises',
+            icon: '🎯',
+            title: '目标达人',
+            description: '完成10个练习',
+            earned: stats.completed_exercises >= 10
+        },
+        {
+            id: 'perfect_score',
+            icon: '💎',
+            title: '完美主义者',
+            description: '获得100分',
+            earned: stats.total_score >= 100
+        },
+        {
+            id: 'streak_master',
+            icon: '🔥',
+            title: '坚持大师',
+            description: '连续学习7天',
+            earned: stats.streak_days >= 7
+        },
+        {
+            id: 'speed_demon',
+            icon: '⚡',
+            title: '速度之星',
+            description: '单题用时少于2分钟',
+            earned: false // 需要具体实现
+        },
+        {
+            id: 'help_seeker',
+            icon: '🤖',
+            title: 'AI助手用户',
+            description: '使用AI助手10次',
+            earned: false // 需要跟踪AI使用次数
+        }
+    ];
+
+    const achievementsHtml = achievements.map(achievement => `
+        <div class="text-center d-inline-block">
+            <div class="achievement-badge ${achievement.earned ? 'achievement-earned' : 'achievement-locked'}"
+                 title="${achievement.title}: ${achievement.description}">
+                ${achievement.icon}
+            </div>
+            <small class="d-block mt-1 ${achievement.earned ? 'text-success' : 'text-muted'}">
+                ${achievement.title}
+            </small>
+        </div>
+    `).join('');
+
+    container.innerHTML = achievementsHtml;
+}
+
+// 渲染学习日历
+function renderLearningCalendar(stats) {
+    const container = document.getElementById('calendarGrid');
+
+    // 生成最近30天的日历
+    const days = [];
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+
+        // 模拟学习活动（实际应用中需要从后端获取）
+        const hasActivity = Math.random() > 0.3; // 70%的概率有学习活动
+
+        days.push({
+            date: date,
+            hasActivity: hasActivity,
+            day: date.getDate()
+        });
+    }
+
+    const calendarHtml = days.map(day => `
+        <div class="calendar-day ${day.hasActivity ? 'active' : 'inactive'}"
+             title="${day.date.toLocaleDateString()}">
+            ${day.day}
+        </div>
+    `).join('');
+
+    container.innerHTML = calendarHtml;
+}
+
+// 渲染学习洞察
+function renderLearningInsights(progress, stats) {
+    const container = document.getElementById('learningInsights');
+
+    const insights = [];
+
+    // 基于数据生成洞察
+    if (stats.streak_days === 0) {
+        insights.push({
+            type: 'warning',
+            icon: 'fas fa-exclamation-triangle',
+            title: '学习连续性',
+            message: '保持每日学习可以帮助您更好地掌握知识。尝试设置学习提醒。'
+        });
+    }
+
+    if (stats.accuracy_rate < 70) {
+        insights.push({
+            type: 'info',
+            icon: 'fas fa-lightbulb',
+            title: '提高准确率',
+            message: '您的正确率可以进一步提升。多阅读题目要求，使用AI助手获取提示。'
+        });
+    }
+
+    if (stats.completed_exercises > 0 && stats.average_score > 85) {
+        insights.push({
+            type: 'success',
+            icon: 'fas fa-star',
+            title: '优秀表现',
+            message: '您的学习表现非常出色！继续保持这种学习态度。'
+        });
+    }
+
+    if (stats.total_time_spent < 3600) { // 少于1小时
+        insights.push({
+            type: 'info',
+            icon: 'fas fa-clock',
+            title: '增加学习时间',
+            message: '适当增加学习时间可以帮助您更深入地理解概念。'
+        });
+    }
+
+    if (insights.length === 0) {
+        insights.push({
+            type: 'success',
+            icon: 'fas fa-check-circle',
+            title: '学习状态良好',
+            message: '您的学习进度和表现都非常均衡。继续保持！'
+        });
+    }
+
+    const insightsHtml = insights.map(insight => `
+        <div class="insight-card alert alert-${insight.type}">
+            <div class="d-flex align-items-start">
+                <i class="${insight.icon} me-3 mt-1"></i>
+                <div>
+                    <h6 class="mb-1">${insight.title}</h6>
+                    <p class="mb-0 small">${insight.message}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = insightsHtml;
+}
+
+// 渲染排行榜
+function renderLeaderboards(leaderboard) {
+    const overallContainer = document.getElementById('leaderboardOverall');
+    const weeklyContainer = document.getElementById('leaderboardWeekly');
+
+    // 总体排行榜
+    const overallHtml = leaderboard.slice(0, 10).map((item, index) => `
+        <div class="leaderboard-item ${item.username === '{{ current_user.username }}' ? 'current-user' : ''}">
+            <div class="rank-badge rank-${index < 3 ? (index + 1) : 'other'}">
+                ${index + 1}
+            </div>
+            <div class="flex-grow-1">
+                <strong>${item.username}</strong>
+                <br>
+                <small class="text-muted">${Math.round(item.total_score)} 分 • ${item.correct_submissions}/${item.total_submissions} 题正确</small>
+            </div>
+        </div>
+    `).join('');
+
+    overallContainer.innerHTML = overallHtml;
+
+    // 本周排行榜（模拟数据，实际应用中需要单独的API）
+    const weeklyHtml = leaderboard.slice(0, 10).map((item, index) => `
+        <div class="leaderboard-item ${item.username === '{{ current_user.username }}' ? 'current-user' : ''}">
+            <div class="rank-badge rank-${index < 3 ? (index + 1) : 'other'}">
+                ${index + 1}
+            </div>
+            <div class="flex-grow-1">
+                <strong>${item.username}</strong>
+                <br>
+                <small class="text-muted">${Math.round(item.total_score * 0.1)} 分 • ${Math.round(item.correct_submissions * 0.1)} 题正确</small>
+            </div>
+        </div>
+    `).join('');
+
+    weeklyContainer.innerHTML = weeklyHtml;
+}
+
+// 显示错误信息
+function showError(message) {
+    const container = document.getElementById('statsCards');
+    container.innerHTML = `
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

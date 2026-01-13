@@ -1,0 +1,507 @@
+{% extends "base.html" %}
+
+{% block title %}Week {{ week.week_number }} - {{ week.title }} - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">学习仪表板</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.weeks') }}">学习周次</a></li>
+                <li class="breadcrumb-item active">Week {{ week.week_number }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- 周次标题和进度 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-1">
+                            <i class="fas fa-calendar-week"></i>
+                            Week {{ week.week_number }}: {{ week.title }}
+                        </h3>
+                        <p class="mb-0 opacity-75">{{ week.description or '本周学习内容介绍' }}</p>
+                    </div>
+                    <div class="text-end">
+                        <div class="h4 mb-0" id="weekProgressValue">0%</div>
+                        <small>学习进度</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3" style="height: 12px;">
+                    <div class="progress-bar bg-primary" id="weekProgressBar" style="width: 0%"></div>
+                </div>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h5 class="text-primary" id="completedExercises">0</h5>
+                        <small class="text-muted">已完成练习</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="text-success" id="earnedPoints">0</h5>
+                        <small class="text-muted">获得分数</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="text-info" id="studyTime">0分钟</h5>
+                        <small class="text-muted">学习时长</small>
+                    </div>
+                    <div class="col-md-3">
+                        <h5 class="text-warning" id="currentStreak">0天</h5>
+                        <small class="text-muted">连续学习</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 学习目标和要求 -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bullseye"></i> 本周学习目标</h5>
+            </div>
+            <div class="card-body" id="learningObjectives">
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> 加载中...
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> 完成奖励</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-medal fa-3x text-warning"></i>
+                </div>
+                <h6>完成本周所有练习</h6>
+                <p class="text-muted small">获得 <strong>{{ week.week_number * 10 }} 积分</strong></p>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-warning" id="completionProgress" style="width: 0%"></div>
+                </div>
+                <small class="text-muted mt-1 d-block" id="completionStatus">0 / 0 练习</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 练习列表 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-code"></i> 本周练习</h5>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary active" onclick="setExerciseView('all')">
+                        全部
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setExerciseView('pending')">
+                        待完成
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="setExerciseView('completed')">
+                        已完成
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="exercisesList" class="row">
+                    <div class="col-12 text-center text-muted">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">加载练习中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI学习助手 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-robot"></i> AI学习助手</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">遇到困难？AI助手可以为您提供代码解释、调试帮助和学习建议。</p>
+                <div class="row text-center">
+                    <div class="col-md-4 mb-2">
+                        <a href="{{ url_for('main.ai_assistant') }}?context=week_{{ week.week_number }}"
+                           class="btn btn-outline-info w-100">
+                            <i class="fas fa-question-circle fa-2x d-block mb-2"></i>
+                            获取提示
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{{ url_for('main.ai_assistant') }}?context=debug"
+                           class="btn btn-outline-success w-100">
+                            <i class="fas fa-bug fa-2x d-block mb-2"></i>
+                            调试帮助
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <a href="{{ url_for('main.ai_assistant') }}?context=review"
+                           class="btn btn-outline-primary w-100">
+                            <i class="fas fa-book fa-2x d-block mb-2"></i>
+                            知识复习
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.exercise-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.exercise-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.exercise-completed {
+    border-color: #28a745 !important;
+    background: linear-gradient(135deg, rgba(40,167,69,0.05) 0%, rgba(40,167,69,0.02) 100%);
+}
+
+.exercise-in-progress {
+    border-color: #ffc107 !important;
+    background: linear-gradient(135deg, rgba(255,193,7,0.05) 0%, rgba(255,193,7,0.02) 100%);
+}
+
+.exercise-locked {
+    opacity: 0.6;
+    filter: grayscale(50%);
+}
+
+.exercise-locked .card-body {
+    pointer-events: none;
+}
+
+.difficulty-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+}
+
+.difficulty-beginner {
+    background: #d4edda;
+    color: #155724;
+}
+
+.difficulty-intermediate {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.difficulty-advanced {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.exercise-stats {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.exercise-stats i {
+    width: 1rem;
+}
+
+.exercise-actions {
+    margin-top: auto;
+}
+
+.learning-objective {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.learning-objective.completed {
+    opacity: 0.7;
+}
+
+.learning-objective .objective-icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+}
+
+.learning-objective.completed .objective-icon {
+    background: #28a745;
+    color: white;
+}
+
+.learning-objective.pending .objective-icon {
+    background: #e9ecef;
+    color: #6c757d;
+}
+</style>
+
+<script>
+let currentExerciseView = 'all';
+let weekData = null;
+let exercisesData = [];
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadWeekData();
+});
+
+// 加载周次数据
+function loadWeekData() {
+    const weekId = {{ week.id }};
+
+    Promise.all([
+        fetch(`/api/v1/learning/progress/${weekId}`).then(r => r.json()),
+        fetch(`/api/v1/exercises?week_id=${weekId}`).then(r => r.json()),
+        fetch('/api/v1/learning/stats').then(r => r.json())
+    ])
+    .then(([progressData, exercisesData, statsData]) => {
+        if (progressData.success && exercisesData.success && statsData.success) {
+            weekData = progressData.progress;
+            renderWeekOverview(progressData.progress, statsData.stats);
+            renderExercises(exercisesData.exercises, progressData.progress);
+            renderLearningObjectives(progressData.progress);
+        }
+    })
+    .catch(error => {
+        console.error('加载周次数据失败:', error);
+        showError('加载数据失败，请刷新页面重试');
+    });
+}
+
+// 渲染周次概览
+function renderWeekOverview(progress, stats) {
+    if (!progress) return;
+
+    // 更新进度条
+    const progressPercent = progress.progress_percentage || 0;
+    document.getElementById('weekProgressValue').textContent = Math.round(progressPercent) + '%';
+    document.getElementById('weekProgressBar').style.width = progressPercent + '%';
+
+    // 更新统计数据
+    document.getElementById('completedExercises').textContent = progress.summary?.completed_exercises || 0;
+    document.getElementById('earnedPoints').textContent = progress.summary?.earned_points || 0;
+    document.getElementById('studyTime').textContent = Math.round((progress.time_spent || 0) / 60) + '分钟';
+    document.getElementById('currentStreak').textContent = stats.streak_days + '天';
+
+    // 更新完成进度
+    const completionPercent = progress.summary ?
+        (progress.summary.completed_exercises / progress.summary.total_exercises * 100) : 0;
+    document.getElementById('completionProgress').style.width = completionPercent + '%';
+    document.getElementById('completionStatus').textContent =
+        `${progress.summary?.completed_exercises || 0} / ${progress.summary?.total_exercises || 0} 练习`;
+}
+
+// 渲染练习列表
+function renderExercises(exercises, progress) {
+    const container = document.getElementById('exercisesList');
+
+    if (!exercises || exercises.length === 0) {
+        container.innerHTML = `
+            <div class="col-12 text-center text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>本周暂无练习</p>
+            </div>
+        `;
+        return;
+    }
+
+    // 创建练习进度映射
+    const progressMap = {};
+    if (progress && progress.exercises) {
+        progress.exercises.forEach(ex => {
+            progressMap[ex.exercise_id] = ex;
+        });
+    }
+
+    const exercisesHtml = exercises
+        .filter(exercise => shouldShowExercise(exercise, progressMap[exercise.id]))
+        .map(exercise => createExerciseCard(exercise, progressMap[exercise.id]))
+        .join('');
+
+    container.innerHTML = exercisesHtml || `
+        <div class="col-12 text-center text-muted">
+            <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+            <p>所有练习都已完成！</p>
+        </div>
+    `;
+}
+
+// 创建练习卡片
+function createExerciseCard(exercise, progress) {
+    const isCompleted = progress?.is_completed || false;
+    const isInProgress = !isCompleted && progress?.attempts > 0;
+    const bestScore = progress?.best_score || 0;
+    const attempts = progress?.attempts || 0;
+
+    const cardClass = isCompleted ? 'exercise-completed' : isInProgress ? 'exercise-in-progress' : '';
+    const statusIcon = isCompleted ? 'fas fa-check-circle text-success' :
+                     isInProgress ? 'fas fa-clock text-warning' : 'fas fa-play text-primary';
+    const statusText = isCompleted ? '已完成' : isInProgress ? '进行中' : '未开始';
+    const buttonText = isCompleted ? '重新练习' : isInProgress ? '继续练习' : '开始练习';
+    const buttonClass = isCompleted ? 'btn-outline-success' : 'btn-primary';
+
+    return `
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="card exercise-card h-100 ${cardClass}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="${statusIcon} me-2"></i>
+                        ${exercise.title}
+                    </h6>
+                    <span class="badge difficulty-badge difficulty-${exercise.difficulty}">
+                        ${getDifficultyText(exercise.difficulty)}
+                    </span>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <p class="card-text text-muted small mb-3">${exercise.description || '练习描述'}</p>
+
+                    <div class="exercise-stats mb-3">
+                        <span><i class="fas fa-trophy"></i> ${exercise.points} 分</span>
+                        <span><i class="fas fa-star"></i> ${bestScore} 分</span>
+                        <span><i class="fas fa-redo"></i> ${attempts} 次</span>
+                    </div>
+
+                    <div class="exercise-actions">
+                        <a href="/exercises/${exercise.id}" class="btn ${buttonClass} w-100">
+                            ${buttonText}
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 判断是否应该显示练习
+function shouldShowExercise(exercise, progress) {
+    switch (currentExerciseView) {
+        case 'completed':
+            return progress?.is_completed || false;
+        case 'pending':
+            return !progress?.is_completed;
+        default:
+            return true;
+    }
+}
+
+// 设置练习视图
+function setExerciseView(view) {
+    currentExerciseView = view;
+
+    // 更新按钮状态
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    document.querySelector(`[onclick="setExerciseView('${view}')"]`).classList.add('active');
+
+    // 重新渲染练习列表
+    if (exercisesData.length > 0 && weekData) {
+        renderExercises(exercisesData, weekData);
+    }
+}
+
+// 渲染学习目标
+function renderLearningObjectives(progress) {
+    const container = document.getElementById('learningObjectives');
+
+    // 基于周次生成学习目标
+    const objectives = generateLearningObjectives({{ week.week_number }}, progress);
+
+    const objectivesHtml = objectives.map((objective, index) => `
+        <div class="learning-objective ${objective.completed ? 'completed' : 'pending'}">
+            <div class="objective-icon">
+                ${objective.completed ? '✓' : index + 1}
+            </div>
+            <div class="flex-grow-1">
+                <strong>${objective.title}</strong>
+                <br>
+                <small class="text-muted">${objective.description}</small>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = objectivesHtml;
+}
+
+// 生成学习目标
+function generateLearningObjectives(weekNumber, progress) {
+    const objectives = [
+        {
+            title: '理解基本概念',
+            description: '掌握本周介绍的核心编程概念',
+            completed: (progress?.progress_percentage || 0) >= 25
+        },
+        {
+            title: '完成基础练习',
+            description: '完成至少50%的练习题目',
+            completed: (progress?.progress_percentage || 0) >= 50
+        },
+        {
+            title: '掌握进阶内容',
+            description: '理解复杂的编程模式和技巧',
+            completed: (progress?.progress_percentage || 0) >= 75
+        },
+        {
+            title: '综合应用练习',
+            description: '完成所有练习并达到80分以上',
+            completed: (progress?.progress_percentage || 0) >= 100 &&
+                      (progress?.summary?.earned_points || 0) >= (progress?.summary?.total_points || 0) * 0.8
+        }
+    ];
+
+    return objectives;
+}
+
+// 获取难度文本
+function getDifficultyText(difficulty) {
+    switch (difficulty) {
+        case 'beginner': return '入门';
+        case 'intermediate': return '中级';
+        case 'advanced': return '高级';
+        default: return difficulty;
+    }
+}
+
+// 显示错误信息
+function showError(message) {
+    const container = document.getElementById('exercisesList');
+    container.innerHTML = `
+        <div class="col-12">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> ${message}
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

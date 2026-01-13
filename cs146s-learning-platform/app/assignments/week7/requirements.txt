@@ -1,0 +1,6 @@
+# 代码审查工具依赖
+# 基础Python库，无需额外依赖
+# 如需扩展可添加:
+# GitPython>=3.1.0  # Git操作
+# PyGithub>=1.55    # GitHub API
+# pylint>=2.12.0    # 代码质量检查

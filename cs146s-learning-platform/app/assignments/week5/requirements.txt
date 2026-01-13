@@ -1,0 +1,6 @@
+# 本地终端自动化依赖
+# 基础Python库，无需额外依赖
+# 如需扩展可添加:
+# concurrent.futures  # 已内置
+# subprocess         # 已内置
+# threading          # 已内置
