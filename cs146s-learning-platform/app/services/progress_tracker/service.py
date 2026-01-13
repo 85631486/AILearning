@@ -227,7 +227,7 @@ class ProgressTracker:
                 'summary': {
                     'total_exercises': len(exercises),
                     'completed_exercises': len([e for e in exercise_progress if e['is_completed']]),
-                    'total_points': sum([e['points'] for e in exercises]),
+                    'total_points': sum([e.points for e in exercises]),
                     'earned_points': sum([e['best_score'] for e in exercise_progress if e['is_completed']])
                 }
             }
