@@ -47,7 +47,13 @@ def exercise_detail(exercise_id):
         flash('练习不存在', 'error')
         return redirect(url_for('main.weeks'))
 
-    return render_template('exercises/exercise_detail.html', exercise=exercise)
+    # 根据练习类型选择不同的模板
+    if exercise.exercise_type == 'prompt':
+        # 提示工程类型的练习，使用专门的沙箱界面
+        return render_template('exercises/prompt_sandbox.html', exercise=exercise)
+    else:
+        # 代码类型的练习，使用代码编辑器
+        return render_template('exercises/exercise_detail.html', exercise=exercise)
 
 @main_bp.route('/ai-assistant')
 @login_required

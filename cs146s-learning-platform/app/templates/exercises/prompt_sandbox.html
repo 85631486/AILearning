@@ -1,0 +1,566 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exercise.title }} - 提示工程沙箱 - CS146S 在线学习平台{% endblock %}
+
+{% block content %}
+<div class="row" data-exercise-id="{{ exercise.id }}">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('main.weeks') }}">课程学习</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('main.week_detail', week_number=exercise.week.week_number) }}">Week {{ exercise.week.week_number }}</a></li>
+                <li class="breadcrumb-item active">{{ exercise.title }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- 练习信息 -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-comments"></i> {{ exercise.title }}
+                    <span class="badge bg-light text-dark ms-2">提示工程</span>
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong><i class="fas fa-trophy"></i> 分数：</strong>{{ exercise.points }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong><i class="fas fa-clock"></i> 时间限制：</strong>{{ exercise.time_limit }} 分钟
+                    </div>
+                    <div class="col-md-4">
+                        <strong><i class="fas fa-signal"></i> 难度：</strong>
+                        <span class="badge bg-{{ 'success' if exercise.difficulty == 'beginner' else 'warning' if exercise.difficulty == 'intermediate' else 'danger' }}">
+                            {{ exercise.difficulty }}
+                        </span>
+                    </div>
+                </div>
+                <hr>
+                <div class="exercise-description">
+                    <h5><i class="fas fa-book"></i> 练习说明</h5>
+                    <div class="content">
+                        {% if exercise.description %}
+                            {{ exercise.description | safe }}
+                        {% else %}
+                            <p class="text-muted">暂无描述</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示工程沙箱 -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-terminal"></i> 提示工程沙箱
+                    </h5>
+                    <div>
+                        <span class="badge bg-light text-dark" id="tokenCount">0 tokens</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 系统提示词 (可选) -->
+                <div class="mb-3">
+                    <label for="systemPrompt" class="form-label">
+                        <i class="fas fa-cog"></i> 系统提示词 (System Prompt)
+                        <small class="text-muted">- 可选，用于设置AI的角色和行为</small>
+                    </label>
+                    <textarea class="form-control font-monospace" id="systemPrompt" rows="3" 
+                              placeholder="例如：你是一个专业的Python编程助手..."></textarea>
+                </div>
+
+                <!-- 用户提示词 -->
+                <div class="mb-3">
+                    <label for="userPrompt" class="form-label">
+                        <i class="fas fa-edit"></i> 用户提示词 (User Prompt) <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control font-monospace" id="userPrompt" rows="8" 
+                              placeholder="在这里输入你的提示词...">{{ exercise.initial_code or '' }}</textarea>
+                </div>
+
+                <!-- 工具栏 -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <button id="runPromptBtn" class="btn btn-success">
+                            <i class="fas fa-play"></i> 运行提示
+                        </button>
+                        <button id="clearBtn" class="btn btn-outline-secondary">
+                            <i class="fas fa-eraser"></i> 清空
+                        </button>
+                    </div>
+                    <div>
+                        <label for="modelSelect" class="me-2">模型:</label>
+                        <select id="modelSelect" class="form-select form-select-sm d-inline-block w-auto">
+                            <option value="qwen-turbo" selected>Qwen Turbo (快速)</option>
+                            <option value="qwen-plus">Qwen Plus (平衡)</option>
+                            <option value="qwen-max">Qwen Max (高质量)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 响应区域 -->
+                <div class="response-area">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0"><i class="fas fa-robot"></i> AI响应</h6>
+                        <div>
+                            <span class="badge bg-secondary" id="responseTime"></span>
+                            <button id="copyResponseBtn" class="btn btn-sm btn-outline-primary" style="display:none;">
+                                <i class="fas fa-copy"></i> 复制
+                            </button>
+                        </div>
+                    </div>
+                    <div id="responseContent" class="response-content">
+                        <div class="text-muted text-center py-5">
+                            <i class="fas fa-comments fa-3x mb-3"></i>
+                            <p>点击"运行提示"按钮，查看AI的响应</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 测试历史 -->
+                <div class="mt-4">
+                    <h6><i class="fas fa-history"></i> 测试历史</h6>
+                    <div id="testHistory" class="test-history">
+                        <p class="text-muted">暂无测试记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交区域 -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-paper-plane"></i> 提交答案</h5>
+            </div>
+            <div class="card-body">
+                <p>完成练习后，提交你的最佳提示词方案：</p>
+                <button id="submitBtn" class="btn btn-success btn-lg w-100">
+                    <i class="fas fa-check"></i> 提交答案
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- 练习提示 -->
+        {% if exercise.hints %}
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb"></i> 提示
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="hints-content">
+                    {{ exercise.hints | safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 参考资源 -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-book-open"></i> 参考资源
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <a href="https://help.aliyun.com/zh/dashscope/" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> 阿里云千问文档
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="https://www.promptingguide.ai/zh" target="_blank">
+                            <i class="fas fa-external-link-alt"></i> 提示工程指南
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 学习进度 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i> 学习进度
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="progress-info">
+                    <p class="text-muted">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交历史 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> 提交历史
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="submission-history">
+                    <p class="text-muted">暂无提交记录</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.response-area {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+}
+
+.response-content {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    min-height: 200px;
+    max-height: 500px;
+    overflow-y: auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+
+.response-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.25rem;
+    overflow-x: auto;
+}
+
+.response-content code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+}
+
+.test-history {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.test-history-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.test-history-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.test-history-item .timestamp {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.test-history-item .preview {
+    font-size: 0.9rem;
+    color: #495057;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// 提示工程沙箱脚本
+const exerciseId = {{ exercise.id }};
+let testHistory = [];
+
+// 运行提示
+document.getElementById('runPromptBtn').addEventListener('click', async function() {
+    const systemPrompt = document.getElementById('systemPrompt').value.trim();
+    const userPrompt = document.getElementById('userPrompt').value.trim();
+    const model = document.getElementById('modelSelect').value;
+    
+    if (!userPrompt) {
+        alert('请输入用户提示词');
+        return;
+    }
+    
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> 运行中...';
+    
+    const responseContent = document.getElementById('responseContent');
+    responseContent.innerHTML = '<div class="text-center py-4"><div class="loading-spinner"></div><p class="mt-2">AI正在思考中...</p></div>';
+    
+    const startTime = Date.now();
+    
+    try {
+        const response = await fetch('/api/v1/ai/prompt', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                system_prompt: systemPrompt || null,
+                user_prompt: userPrompt,
+                model: model,
+                exercise_id: exerciseId
+            })
+        });
+        
+        const data = await response.json();
+        const endTime = Date.now();
+        const duration = ((endTime - startTime) / 1000).toFixed(2);
+        
+        if (data.success) {
+            // 显示响应
+            responseContent.innerHTML = `
+                <div class="mb-2">
+                    <span class="badge bg-success">成功</span>
+                    <span class="badge bg-info">${model}</span>
+                </div>
+                <div class="response-text">${formatResponse(data.response)}</div>
+            `;
+            
+            // 更新响应时间
+            document.getElementById('responseTime').textContent = `${duration}s`;
+            document.getElementById('copyResponseBtn').style.display = 'inline-block';
+            
+            // 更新token计数
+            if (data.tokens) {
+                document.getElementById('tokenCount').textContent = `${data.tokens} tokens`;
+            }
+            
+            // 添加到测试历史
+            addToHistory({
+                timestamp: new Date().toLocaleString('zh-CN'),
+                systemPrompt: systemPrompt,
+                userPrompt: userPrompt,
+                response: data.response,
+                model: model,
+                duration: duration
+            });
+            
+        } else {
+            responseContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>错误：</strong>${data.message || '运行失败'}
+                </div>
+            `;
+        }
+        
+    } catch (error) {
+        responseContent.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> 
+                <strong>错误：</strong>${error.message}
+            </div>
+        `;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
+});
+
+// 格式化响应文本
+function formatResponse(text) {
+    // 简单的Markdown渲染
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    text = text.replace(/`(.*?)`/g, '<code>$1</code>');
+    text = text.replace(/\n/g, '<br>');
+    return text;
+}
+
+// 添加到测试历史
+function addToHistory(item) {
+    testHistory.unshift(item);
+    if (testHistory.length > 10) {
+        testHistory.pop();
+    }
+    renderHistory();
+}
+
+// 渲染测试历史
+function renderHistory() {
+    const container = document.getElementById('testHistory');
+    if (testHistory.length === 0) {
+        container.innerHTML = '<p class="text-muted">暂无测试记录</p>';
+        return;
+    }
+    
+    container.innerHTML = testHistory.map((item, index) => `
+        <div class="test-history-item" onclick="loadHistoryItem(${index})">
+            <div class="d-flex justify-content-between">
+                <span class="timestamp"><i class="fas fa-clock"></i> ${item.timestamp}</span>
+                <span class="badge bg-secondary">${item.duration}s</span>
+            </div>
+            <div class="preview mt-1">
+                <small>${item.userPrompt.substring(0, 50)}${item.userPrompt.length > 50 ? '...' : ''}</small>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 加载历史记录
+function loadHistoryItem(index) {
+    const item = testHistory[index];
+    document.getElementById('systemPrompt').value = item.systemPrompt || '';
+    document.getElementById('userPrompt').value = item.userPrompt;
+    document.getElementById('modelSelect').value = item.model;
+    
+    const responseContent = document.getElementById('responseContent');
+    responseContent.innerHTML = `
+        <div class="mb-2">
+            <span class="badge bg-info">历史记录</span>
+            <span class="badge bg-secondary">${item.model}</span>
+        </div>
+        <div class="response-text">${formatResponse(item.response)}</div>
+    `;
+}
+
+// 清空
+document.getElementById('clearBtn').addEventListener('click', function() {
+    if (confirm('确定要清空所有内容吗？')) {
+        document.getElementById('systemPrompt').value = '';
+        document.getElementById('userPrompt').value = '';
+        document.getElementById('responseContent').innerHTML = `
+            <div class="text-muted text-center py-5">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <p>点击"运行提示"按钮，查看AI的响应</p>
+            </div>
+        `;
+    }
+});
+
+// 复制响应
+document.getElementById('copyResponseBtn').addEventListener('click', function() {
+    const responseText = document.querySelector('.response-text').innerText;
+    navigator.clipboard.writeText(responseText).then(() => {
+        const btn = this;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    });
+});
+
+// 提交答案
+document.getElementById('submitBtn').addEventListener('click', async function() {
+    const systemPrompt = document.getElementById('systemPrompt').value.trim();
+    const userPrompt = document.getElementById('userPrompt').value.trim();
+    
+    if (!userPrompt) {
+        alert('请先完成练习');
+        return;
+    }
+    
+    if (!confirm('确定要提交答案吗？')) {
+        return;
+    }
+    
+    const btn = this;
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> 提交中...';
+    
+    try {
+        const response = await fetch('/api/v1/exercises/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                exercise_id: exerciseId,
+                code: JSON.stringify({
+                    system_prompt: systemPrompt,
+                    user_prompt: userPrompt,
+                    test_history: testHistory
+                })
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('提交成功！\\n得分：' + data.score + '/' + data.total_points);
+            // 刷新页面显示最新状态
+            location.reload();
+        } else {
+            alert('提交失败：' + (data.message || '未知错误'));
+        }
+        
+    } catch (error) {
+        alert('提交失败：' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
+});
+
+// 加载提交历史
+async function loadSubmissionHistory() {
+    try {
+        const response = await fetch(`/api/v1/exercises/${exerciseId}/submissions`);
+        const data = await response.json();
+        
+        if (data.success && data.submissions.length > 0) {
+            const container = document.getElementById('submission-history');
+            container.innerHTML = data.submissions.map(sub => `
+                <div class="submission-item mb-2 p-2 border rounded">
+                    <div class="d-flex justify-content-between">
+                        <span class="badge bg-${sub.is_correct ? 'success' : 'warning'}">
+                            ${sub.score}/${sub.total_points}
+                        </span>
+                        <small class="text-muted">${new Date(sub.submitted_at).toLocaleString('zh-CN')}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('加载提交历史失败:', error);
+    }
+}
+
+// 页面加载时执行
+document.addEventListener('DOMContentLoaded', function() {
+    loadSubmissionHistory();
+});
+</script>
+{% endblock %}

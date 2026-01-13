@@ -235,3 +235,39 @@ class AIAssistant:
                 'avg_response_time': 0,
                 'period_days': days
             }
+
+    def run_prompt(self, user_prompt: str, system_prompt: str = None, model: str = None) -> dict:
+        """运行提示工程练习"""
+        try:
+            # 使用指定的模型或默认模型
+            model_to_use = model or self.model
+            
+            # 构建消息列表
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": user_prompt})
+            
+            # 调用LLM client
+            response = self.client.chat(
+                model=model_to_use,
+                messages=messages,
+                options={
+                    'max_tokens': 2000,
+                    'temperature': 0.7
+                }
+            )
+            
+            return {
+                'success': True,
+                'response': response.get('content', ''),
+                'tokens': response.get('tokens', 0),
+                'model': model_to_use
+            }
+            
+        except Exception as e:
+            current_app.logger.error(f'运行提示失败: {str(e)}')
+            return {
+                'success': False,
+                'message': f'运行提示失败: {str(e)}'
+            }

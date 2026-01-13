@@ -233,3 +233,73 @@ def get_usage():
 
     except Exception as e:
         return jsonify({'success': False, 'message': '获取使用统计失败', 'error': str(e)}), 500
+
+@ai_bp.route('/prompt', methods=['POST'])
+@login_required
+def run_prompt():
+    """运行提示工程练习"""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'message': '请求数据不能为空'}), 400
+
+        system_prompt = data.get('system_prompt', '').strip()
+        user_prompt = data.get('user_prompt', '').strip()
+        model = data.get('model', 'qwen-turbo')
+        exercise_id = data.get('exercise_id')
+
+        if not user_prompt:
+            return jsonify({'success': False, 'message': '用户提示词不能为空'}), 400
+
+        # 验证提示词长度
+        if len(user_prompt) > 10000:
+            return jsonify({'success': False, 'message': '提示词过长（最多10000字符）'}), 400
+
+        if system_prompt and len(system_prompt) > 5000:
+            return jsonify({'success': False, 'message': '系统提示词过长（最多5000字符）'}), 400
+
+        # 验证模型
+        allowed_models = ['qwen-turbo', 'qwen-plus', 'qwen-max', 'qwen-long']
+        if model not in allowed_models:
+            return jsonify({'success': False, 'message': f'不支持的模型: {model}'}), 400
+
+        # 调用千问API
+        import time
+        start_time = time.time()
+        
+        result = get_ai_assistant().run_prompt(
+            system_prompt=system_prompt if system_prompt else None,
+            user_prompt=user_prompt,
+            model=model
+        )
+        
+        end_time = time.time()
+        duration = end_time - start_time
+
+        if result['success']:
+            # 保存对话记录
+            get_ai_assistant().save_conversation(
+                user_id=current_user.id,
+                user_message=f"系统提示: {system_prompt}\n\n用户提示: {user_prompt}",
+                ai_response=result,
+                message_type='prompt',
+                exercise_id=exercise_id
+            )
+            
+            return jsonify({
+                'success': True,
+                'response': result.get('response', ''),
+                'tokens': result.get('tokens', 0),
+                'model': model,
+                'duration': round(duration, 2)
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': result.get('message', '运行失败')
+            }), 500
+
+    except Exception as e:
+        current_app.logger.error(f"运行提示失败: {str(e)}")
+        return jsonify({'success': False, 'message': '运行提示失败', 'error': str(e)}), 500
